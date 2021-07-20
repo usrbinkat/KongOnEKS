@@ -44,6 +44,7 @@ ARG DNF_FLAGS_EXTRA="\
 # Build Rootfs
 RUN set -ex \
      && mkdir -p ${BUILD_PATH}                                                  \
+     && dnf -y module reset nodejs                                              \
      && dnf -y module enable nodejs:12                                          \
      && dnf install ${DNF_FLAGS_EXTRA} ${DNF_LIST}                              \
      && dnf clean all ${DNF_FLAGS}                                              \
