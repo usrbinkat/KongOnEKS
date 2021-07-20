@@ -70,9 +70,9 @@ RUN set -ex \
 
 # Add Kubectl Binary
 # curl -sL curl -L -s https://dl.k8s.io/release/stable.txt
-ARG KUBECTL_VERSION=${KUBECTL_VERSION}
-ENV KUBECTL_VERSION=${KUBECTL_VERSION}
-ARG urlKubectl="https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+ARG varverkubectl=${varverkubectl}
+ENV varverkubectl=${varverkubectl}
+ARG urlKubectl="https://storage.googleapis.com/kubernetes-release/release/${varverkubectl}/bin/linux/amd64/kubectl"
 RUN set -ex \
      && curl -L ${urlKubectl} --output /bin/kubectl                             \
      && chmod +x /bin/kubectl                                                   \
@@ -80,9 +80,9 @@ RUN set -ex \
     && echo
 
 # curl -s https://api.github.com/repos/pulumi/pulumi/releases/latest | awk -F '["v,]' '/tag_name/{print $5}'
-ARG verPulumiBin="${verPulumiBin}"
-ENV verPulumiBin="${verPulumiBin}"
-ARG urlPulumiBin="https://github.com/pulumi/pulumi/releases/download/v${verPulumiBin}/pulumi-v${verPulumiBin}-linux-x64.tar.gz"
+ARG varverpulumi="${varverpulumi}"
+ENV varverpulumi="${varverpulumi}"
+ARG urlPulumiBin="https://github.com/pulumi/pulumi/releases/download/v${varverpulumi}/pulumi-v${varverpulumi}-linux-x64.tar.gz"
 RUN set -ex \
      && curl -L ${urlPulumiBin}                                                 \
         | tar xzvf - --directory /tmp                                           \
