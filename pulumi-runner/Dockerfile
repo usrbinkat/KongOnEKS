@@ -5,7 +5,7 @@ ARG BUILD_PATH='/rootfs'
 
 #################################################################################
 # DNF Package Install List
-ARG DNF_LIST="\
+ARG DNF_LIST1="\
   tar \
   git \
   bash \
@@ -42,20 +42,29 @@ ARG DNF_FLAGS_EXTRA="\
 #################################################################################
 # Build Rootfs
 RUN set -ex \
-     && mkdir -p ${BUILD_PATH}                                                        \
-     && dnf install ${DNF_FLAGS_EXTRA} ${DNF_LIST}                                    \
-     && dnf -y module reset nodejs                                                    \
-     && dnf -y module enable nodejs:12                                                \
-     && dnf -y install --setopt=tsflags=nodocs nodejs npm nodejs-nodemon nss_wrapper  \
-     && dnf clean all ${DNF_FLAGS}                                                    \
-     && cp -f /etc/yum.repos.d/ubi.repo ${BUILD_PATH}/etc/yum.repos.d/ubi.repo        \
-     && rm -rf ${BUILD_PATH}/var/cache/*                                              \
+     && mkdir -p ${BUILD_PATH}                                                               \
+     && dnf -y module reset nodejs                                                           \
+     && dnf -y module enable nodejs:12                                                       \
+     && dnf install ${DNF_FLAGS_EXTRA} ${DNF_LIST1}                                          \
+     && cp -f /etc/yum.repos.d/ubi.repo ${BUILD_PATH}/etc/yum.repos.d/ubi.repo               \
+     && cp -f /etc/yum.repos.d/redhat.repo ${BUILD_PATH}/etc/yum.repos.d/redhat.repo         \
+     && cp -f /etc/dnf/modules.d/nodejs.module ${BUILD_PATH}/etc/dnf/modules.d/nodejs.module \
+     && dnf install -y --setopt=tsflags=nodocs                                               \
+                       --installroot /rootfs nodejs npm nodejs-nodemon nss_wrapper           \
+     && dnf clean all ${DNF_FLAGS}                                                           \
+     && rm -rf ${BUILD_PATH}/var/cache/*                                                     \
     && echo
 
 #################################################################################
 # Build Image from Rootfs
 FROM scratch
 COPY --from=builder /rootfs /
+
+# Test Node & NPM Installation
+RUN set -ex \
+     && npm --version \
+     && node --version \
+    && echo
 
 # Install AWS CLI v2
 ARG urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
@@ -70,7 +79,6 @@ RUN set -ex \
     && echo
 
 # Add Kubectl Binary
-# curl -sL curl -L -s https://dl.k8s.io/release/stable.txt
 ARG varverkubectl=${varverkubectl}
 ENV varverkubectl=${varverkubectl}
 ARG urlKubectl="https://storage.googleapis.com/kubernetes-release/release/${varverkubectl}/bin/linux/amd64/kubectl"
@@ -80,7 +88,7 @@ RUN set -ex \
      && kubectl version --client --short || exit 1                              \
     && echo
 
-# curl -s https://api.github.com/repos/pulumi/pulumi/releases/latest | awk -F '["v,]' '/tag_name/{print $5}'
+# Add Pulumi binary
 ARG varverpulumi="${varverpulumi}"
 ENV varverpulumi="${varverpulumi}"
 ARG urlPulumiBin="https://github.com/pulumi/pulumi/releases/download/v${varverpulumi}/pulumi-v${varverpulumi}-linux-x64.tar.gz"
@@ -91,12 +99,6 @@ RUN set -ex \
      && rm -rf /tmp/pulumi                                                      \
      && pulumi version                                                          \
     && echo
-
-# Test Node & NPM Installation
-RUN set -ex \
-   && npm --version \
-   && node --version \
-  && echo
 
 # Add static artifacts from repo
 ADD ./rootfs /
