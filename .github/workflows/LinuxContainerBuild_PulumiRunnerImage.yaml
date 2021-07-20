@@ -1,7 +1,9 @@
 name: pulumi-runner
 on:
+  schedule:
+    - cron: '0 1 * * *'
   repository_dispatch:
-    types: [lcb-pulumi-runner-image]
+    types: [pulumi-runner-build]
 
 jobs:
   build:
@@ -47,7 +49,7 @@ jobs:
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v1.5.1
 
-    - name: Build Image | ghcr.io/${{ github.actor  }}/${{ github.workflow  }}
+    - name: Build Image | ghcr.io/${{ github.actor }}/${{ github.workflow }}
       uses: docker/build-push-action@v2.6.1
       with:
         context: ./${{ github.workflow }}
@@ -70,11 +72,11 @@ jobs:
           varvergrpcurl=${{ env.varvergrpcurl }}
           varverterraform=${{ env.varverterraform }}
 
-#   - name: Start Next GH Actions Pipeline
-#     if: success()
-#     uses: peter-evans/repository-dispatch@v1.1.3
-#     with:
-#       event-type: type-name
-#       token: ${{ secrets.GH_ACTIONS_TOKEN }}
-#       repository: ${{ github.repository }}
-#       client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+    - name: Trigger Pulumi Deploy
+      if: success()
+      uses: peter-evans/repository-dispatch@v1.1.3
+      with:
+        event-type: pulumi-runner-deploy
+        token: ${{ secrets.GH_ACTIONS_TOKEN }}
+        repository: ${{ github.repository }}
+        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'

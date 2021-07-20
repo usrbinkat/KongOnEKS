@@ -1,6 +1,6 @@
 #!/bin/bash -x
 git_repo=KongOnEKS
-project="${git_repo}"
+project="deploy-${git_repo}"
 tmpDir="${HOME}/Git/tmp/pulumi-runner"
 
 rm -fr ${tmpDir}
@@ -10,13 +10,10 @@ cp -fr ${HOME}/.kube ${tmpDir}/kube
 cp -fr ${HOME}/.aws ${tmpDir}/aws
 cp -fr ${HOME}/.ssh ${tmpDir}/ssh
 
-sudo docker rm --force ${project}
-docker run -it --pull always \
+docker run -it --rm --pull always \
     -v ${PWD}:/pulumi:z \
     --name "${project}" -h "${project}" --user root \
     --env-file /tmp/env \
-   ghcr.io/usrbinkat/pulumi-runner
-#   -v ${tmpDir}/ssh/.ssh:/root/.ssh:z \
-#   -v ${tmpDir}/kube/.kube:/root/.kube:z \
-#   -v ${tmpDir}/gitconfig/.gitconfig:/root/.gitconfig:z \
-#   -v ${tmpDir}/aws/.aws:/root/.aws:z \
+    --entrypoint pulumi \
+   ghcr.io/usrbinkat/pulumi-runner \
+     up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive

@@ -1,4 +1,4 @@
-name: Kong EKS Pulumi IaC Workflow Dispatcher
+name: Workflow Dispatcher
 on:
   schedule:
     - cron: '0 1 * * *'
@@ -19,12 +19,10 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-
     - name: Linux Container Build | Pulumi Runner Image
-      if: success()
       uses: peter-evans/repository-dispatch@v1.1.3
       with:
-        event-type: lcb-pulumi-runner-image
+        event-type: pulumi-runner-build
         token: ${{ secrets.GH_ACTIONS_TOKEN }}
         repository: ${{ github.repository }}
         client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
