@@ -18,7 +18,6 @@ ARG DNF_LIST="\
   python3-pip \
   coreutils-single \
   glibc-minimal-langpack \
-  nodejs npm nodejs-nodemon nss_wrapper \
 "
 
 ARG NPM_LIST="\
@@ -43,13 +42,14 @@ ARG DNF_FLAGS_EXTRA="\
 #################################################################################
 # Build Rootfs
 RUN set -ex \
-     && mkdir -p ${BUILD_PATH}                                                  \
-     && dnf -y module reset nodejs                                              \
-     && dnf -y module enable nodejs:12                                          \
-     && dnf install ${DNF_FLAGS_EXTRA} ${DNF_LIST}                              \
-     && dnf clean all ${DNF_FLAGS}                                              \
-     && cp -f /etc/yum.repos.d/ubi.repo ${BUILD_PATH}/etc/yum.repos.d/ubi.repo  \
-     && rm -rf ${BUILD_PATH}/var/cache/*                                        \
+     && mkdir -p ${BUILD_PATH}                                                        \
+     && dnf install ${DNF_FLAGS_EXTRA} ${DNF_LIST}                                    \
+     && dnf -y module reset nodejs                                                    \
+     && dnf -y module enable nodejs:12                                                \
+     && dnf -y install --setopt=tsflags=nodocs nodejs npm nodejs-nodemon nss_wrapper  \
+     && dnf clean all ${DNF_FLAGS}                                                    \
+     && cp -f /etc/yum.repos.d/ubi.repo ${BUILD_PATH}/etc/yum.repos.d/ubi.repo        \
+     && rm -rf ${BUILD_PATH}/var/cache/*                                              \
     && echo
 
 #################################################################################
