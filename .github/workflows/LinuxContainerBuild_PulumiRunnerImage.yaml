@@ -56,9 +56,9 @@ jobs:
         pull: true
         push: true
         tags: |
-          ghcr.io/${{ env.GITHUB_ACTOR }}/${{ github.workflow }}
-          ghcr.io/${{ env.GITHUB_ACTOR }}/${{ github.workflow }}:latest
-          ghcr.io/${{ env.GITHUB_ACTOR }}/${{ github.workflow }}:${{ github.sha }}
+          ghcr.io/${{ github.actor }}/${{ github.workflow }}
+          ghcr.io/${{ github.actor }}/${{ github.workflow }}:latest
+          ghcr.io/${{ github.actor }}/${{ github.workflow }}:${{ github.sha }}
         build-args: |
           varveryq=${{ env.varveryq}}
           varverjq=${{ env.varverjq }}
