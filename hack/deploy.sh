@@ -12,8 +12,8 @@ cp -fr ${HOME}/.ssh ${tmpDir}/ssh
 
 docker run -it --rm --pull always \
     -v ${PWD}:/pulumi:z \
-    --name "${project}" -h "${project}" --user root \
     --env-file /tmp/env \
     --entrypoint pulumi \
+    --name "${project}" -h "${project}" --user root \
    ghcr.io/usrbinkat/pulumi-runner \
      up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive

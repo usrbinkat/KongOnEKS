@@ -31,14 +31,20 @@ jobs:
         set -ex ;\
         pwd ;\
         ls -lah ;\
-        pulumi up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive ;\
+        docker run -it --rm --pull always \
+            -v ${PWD}:/pulumi:z \
+            --env-file /tmp/env \
+            --entrypoint pulumi \
+            --name "${project}" -h "${project}" --user root \
+          ghcr.io/usrbinkat/pulumi-runner \
+            up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive ;\
         echo;
-    container:
-      image: ghcr.io/${{ github.actor }}/pulumi-runner:latest
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-      options: "--cpus 2"
-      volumes:
-        - ${{ github.GITHUB_ACTION_PATH }}:/pulumi
+#    container:
+#      image: ghcr.io/${{ github.actor }}/pulumi-runner:latest
+#      env:
+#        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+#      options: "--cpus 2"
+#      volumes:
+#        - ${{ github.GITHUB_ACTION_PATH }}:/pulumi
