@@ -31,7 +31,7 @@ jobs:
         set -ex ;\
         pwd ;\
         ls -lah ;\
-        docker run -it --rm --pull always \
+        docker run -t --rm --pull always \
             -v ${PWD}:/pulumi:z \
             --entrypoint pulumi \
           ghcr.io/usrbinkat/pulumi-runner \
