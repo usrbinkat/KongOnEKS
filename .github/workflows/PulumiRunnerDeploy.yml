@@ -19,5 +19,5 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
       volumes:
-        - ${{ github.action_path }}:/pulumi
+        - ../../${{ github.action_path }}:/pulumi
       options: --cpus 1
