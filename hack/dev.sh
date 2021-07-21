@@ -1,22 +1,10 @@
 #!/bin/bash -x
-git_repo=KongOnEKS
-project="${git_repo}"
-tmpDir="${HOME}/Git/tmp/pulumi-runner"
-
-rm -fr ${tmpDir}
-mkdir -p ${tmpDir}/{ssh,aws,kube,gitconfig}
-cp -fr ${HOME}/.gitconfig ${tmpDir}/gitconfig
-cp -fr ${HOME}/.kube ${tmpDir}/kube
-cp -fr ${HOME}/.aws ${tmpDir}/aws
-cp -fr ${HOME}/.ssh ${tmpDir}/ssh
-
-sudo docker rm --force ${project}
-docker run -it --pull always \
+clear
+project="pulumi-runner"
+time docker run -it --rm --pull always \
     -v ${PWD}:/pulumi:z \
-    --name "${project}" -h "${project}" --user root \
-    --env-file /tmp/env \
+    -e AWS_ACCESS_KEY_ID=$(awk '/aws_access_key_id/{print $3}' ~/.aws/credentials) \
+    -e AWS_SECRET_ACCESS_KEY=$(awk '/aws_secret_access_key/{print $3}' ~/.aws/credentials) \
+    -e PULUMI_ACCESS_TOKEN=$(awk -F'[",: ]' '/            "accessToken/{print $18}' ~/.pulumi/credentials.json) \
+    --entrypoint bash \
    ghcr.io/usrbinkat/pulumi-runner
-#   -v ${tmpDir}/ssh/.ssh:/root/.ssh:z \
-#   -v ${tmpDir}/kube/.kube:/root/.kube:z \
-#   -v ${tmpDir}/gitconfig/.gitconfig:/root/.gitconfig:z \
-#   -v ${tmpDir}/aws/.aws:/root/.aws:z \
