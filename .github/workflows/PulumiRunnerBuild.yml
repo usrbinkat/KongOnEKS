@@ -1,0 +1,59 @@
+name: pulumi-runner
+on:
+  repository_dispatch:
+    types: [pulumi-runner-build]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+
+    - name: Rake Variables
+      run: |
+        set -x ; \
+        echo "varrundate=$(date +%y%m%d%I%M%S)" >> ${GITHUB_ENV};\
+        echo "varverkubectl=$(curl -sL curl -L -s https://dl.k8s.io/release/stable.txt)" >> ${GITHUB_ENV};\
+        echo "varverpulumi=$(curl -s https://api.github.com/repos/pulumi/pulumi/releases/latest | awk -F '["v,]' '/tag_name/{print $5}')" >> ${GITHUB_ENV};\
+        echo;  
+
+    - name: Login ghcr.io
+      uses: docker/login-action@v1.10.0
+      with:
+        logout: true
+        registry: ghcr.io
+        username: ${{ secrets.GHCR_USER }}
+        password: ${{ secrets.GHCR_TOKEN }}
+
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v1.5.1
+
+    - name: Git Checkout
+      uses: actions/checkout@v2.3.4
+      with:
+        ref: ${{ github.event.client_payload.sha }}
+
+    - name: Build Image | ghcr.io/${{ github.actor }}/${{ github.workflow }}
+      uses: docker/build-push-action@v2.6.1
+      with:
+        context: ./${{ github.workflow }}
+        file: ./${{ github.workflow }}/Dockerfile
+        platforms: linux/amd64
+        pull: true
+        push: true
+        tags: |
+          ghcr.io/${{ github.actor }}/${{ github.workflow }}
+          ghcr.io/${{ github.actor }}/${{ github.workflow }}:latest
+          ghcr.io/${{ github.actor }}/${{ github.workflow }}:${{ github.sha }}
+        build-args: |
+          varrundate=${{ env.varrundate }}
+          varverpulumi=${{ env.varverpulumi }}
+          varverkubectl=${{ env.varverkubectl }}
+
+    - name: Trigger Pulumi Deploy
+      if: success()
+      uses: peter-evans/repository-dispatch@v1.1.3
+      with:
+        event-type: pulumi-runner-deploy
+        token: ${{ secrets.GH_ACTIONS_TOKEN }}
+        repository: ${{ github.repository }}
+        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
