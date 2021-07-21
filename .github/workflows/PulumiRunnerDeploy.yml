@@ -11,8 +11,9 @@ jobs:
         run: |
           set -ex ;\
           printenv ;\
+          ls -lah ;\
           pwd ;\
-          pulumi up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive ;\
+          pulumi up --stack KongOnEKS --yes --cwd ./pulumi --non-interactive ;\
           echo;
     container:
       image: ghcr.io/${{ github.actor }}/pulumi-runner:latest
