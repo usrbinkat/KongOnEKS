@@ -15,7 +15,7 @@ const vpc = new awsx.ec2.Vpc("keks-vpc", {
 //    ],
     subnets: [
         { type: "public",  name: "public"  }, 
-#       { type: "private", name: "private" }
+//      { type: "private", name: "private" }
     ]
 });
 
@@ -29,7 +29,7 @@ const cluster = new eks.Cluster("keks-cluster", {
     maxSize: 6,
     desiredCapacity: 3,
     publicSubnetIds: vpc.publicSubnetIds,
-#   privateSubnetIds: vpc.privateSubnetIds,
+//  privateSubnetIds: vpc.privateSubnetIds,
     nodeAssociatePublicIpAddress: true,
     enabledClusterLogTypes: [
         "api",
