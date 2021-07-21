@@ -10,10 +10,9 @@ jobs:
       - name: Pulumi Runner Deploy
         run: |
           set -ex ;\
-          printenv ;\
-          ls -lah ;\
           pwd ;\
-          pulumi up --stack KongOnEKS --yes --cwd ./pulumi --non-interactive ;\
+          ls -lah ;\
+          pulumi up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive ;\
           echo;
     container:
       image: ghcr.io/${{ github.actor }}/pulumi-runner:latest
@@ -21,6 +20,6 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-      options: --cpus 2
+      options: "--volume $(pwd):/pulumi --cpus 2"
 #     volumes:
 #       - .:/pulumi
