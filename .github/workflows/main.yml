@@ -41,4 +41,4 @@ jobs:
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
       options: "--cpus 2"
       volumes:
-        - ${{ env.GITHUB_ACTION_PATH }}:/pulumi
+        - ${{ github.GITHUB_ACTION_PATH }}:/pulumi
