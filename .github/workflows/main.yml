@@ -31,7 +31,11 @@ jobs:
       with:
         ref: ${{ github.event.client_payload.sha }}
     - name: Pulumi Runner Deploy
-      run: pulumi up --stack KongOnEKS --yes --cwd ./pulumi --non-interactive
+      run: |
+        set -ex ;\
+        ls -lah ;\
+        pwd ;\
+        pulumi up --stack KongOnEKS --yes --cwd ./pulumi --non-interactive
         #        set -ex ;\
         #        pwd ;\
         #        ls -lah ;\
