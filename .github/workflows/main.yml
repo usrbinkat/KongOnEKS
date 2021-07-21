@@ -34,6 +34,7 @@ jobs:
         docker run -t --rm --pull always \
             -v ${PWD}:/pulumi:z \
             --entrypoint pulumi \
+            --workdir /pulumi \
           ghcr.io/usrbinkat/pulumi-runner \
             up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive ;\
         echo;
