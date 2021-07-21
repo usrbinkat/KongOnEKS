@@ -35,7 +35,7 @@ jobs:
         set -ex ;\
         cd $(pwd)/pulumi ;\
         npm install ;\
-        pulumi up --stack KongOnEKS --yes --cwd --non-interactive
+        pulumi up --stack KongOnEKS --yes --non-interactive
         #        set -ex ;\
         #        pwd ;\
         #        ls -lah ;\
