@@ -6,6 +6,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-20.04
+    steps:
+      - name: Pulumi Runner Deploy
+        run: |
+          set -ex ;\
+          pulumi up --stack KongOnEKS --yes --cwd /pulumi/pulumi --non-interactive ;\
+          echo;
     container:
       image: ghcr.io/${{ github.actor }}/${{ github.workflow }}:latest
       env:
