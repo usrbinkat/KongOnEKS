@@ -105,7 +105,7 @@ ADD ./rootfs /
 
 ENV PULUMI_CONFIG_PASSPHRASE=pulumi
 WORKDIR /pulumi
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/entrypoint.sh"]
 
 #################################################################################
 # Finalize Image
