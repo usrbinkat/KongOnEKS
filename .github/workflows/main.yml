@@ -33,9 +33,9 @@ jobs:
     - name: Pulumi Runner Deploy
       run: |
         set -ex ;\
-        ls -lah ;\
-        pwd ;\
-        pulumi up --stack KongOnEKS --yes --cwd ./pulumi --non-interactive
+        cd $(pwd)/pulumi ;\
+        npm install ;\
+        pulumi up --stack KongOnEKS --yes --cwd --non-interactive
         #        set -ex ;\
         #        pwd ;\
         #        ls -lah ;\
