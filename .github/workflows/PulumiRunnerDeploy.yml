@@ -23,5 +23,5 @@ jobs:
         cd $(pwd)/pulumi
         npm install
         pulumi up --stack KongOnEKS --yes --non-interactive
-#       pulumi stack --stack KongOnEKS output kubeconfig > /tmp/kubeconfig.yml
-#       aws s3 cp /tmp/kubeconfig.yml s3://$(pulumi stack --stack KongOnEKS output adminBucketName)
+        pulumi stack --stack KongOnEKS output kubeconfig > /tmp/kubeconfig.yml
+        aws s3 cp /tmp/kubeconfig.yml s3://$(pulumi stack --stack KongOnEKS output adminBucketName)

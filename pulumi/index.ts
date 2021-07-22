@@ -36,14 +36,16 @@ const cluster = new eks.Cluster("keks-cluster", {
 });
 
 // Create S3 Bucket for KUBECONFIG
-// const keks-admin-bucket = new aws.s3.Bucket("keks-s3")
-const keks-admin-bucket = new aws.s3.Bucket("keks-admin-bucket", {acl: "private"});
-const keks-admin-bucketObject = new aws.s3.BucketObject("keks-admin-bucketObject", {
+const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket")
+/*
+const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
+const keksAdminBucketObject = new aws.s3.BucketObject("keksAdminBucketObject", {
     key: "kubeconfig",
-    bucket: keks-admin-bucket.id,
-    source: new pulumi.asset.StringAsset(cluster.kubeconfig),
+    bucket: keksAdminBucket.id,
+    source: new pulumi.asset.StringAsset(String(cluster.kubeconfig)),
     serverSideEncryption: "aws:kms",
 });
+*/
 
 // Export Values
 // Subnet ID's
@@ -56,6 +58,6 @@ export const vpcPrivateSubnetIds = vpc.privateSubnetIds;
 // VPC ID
 export const vpcId = vpc.id;
 // Export the name of the bucket
-export const adminBucketName = keks-admin-bucket.id;
+export const adminBucketName = keksAdminBucket.id;
 // Export the cluster's kubeconfig.
 export const kubeconfig = cluster.kubeconfig;
