@@ -24,5 +24,5 @@ jobs:
         npm install;
         pulumi up --stack KongOnEKS --yes --non-interactive --suppress-outputs;
         pulumi stack --stack KongOnEKS output kubeconfig | tee /tmp/kubeconfig;
-        aws s3 cp /tmp/kubeconfig s3://$(pulumi stack --stack KongOnEKS output adminBucketName);
+        aws s3 cp /tmp/kubeconfig s3://$(pulumi stack --stack KongOnEKS output adminBucketName)/kubeconfig;
 
