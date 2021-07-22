@@ -17,19 +17,19 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-#   - name: Linux Container Build | Pulumi Runner Image
-#     uses: peter-evans/repository-dispatch@v1.1.3
-#     with:
-#       event-type: pulumi-runner-build
-#       token: ${{ secrets.GH_ACTIONS_TOKEN }}
-#       repository: ${{ github.repository }}
-#       client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
-#
-    - name: Trigger Pulumi Deploy
-      if: success()
+    - name: Linux Container Build | Runner Image
       uses: peter-evans/repository-dispatch@v1.1.3
       with:
-        event-type: pulumi-runner-deploy
+        event-type: runner-image-build
         token: ${{ secrets.GH_ACTIONS_TOKEN }}
         repository: ${{ github.repository }}
         client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+ 
+          #    - name: Trigger Pulumi Deploy
+          #      if: success()
+          #      uses: peter-evans/repository-dispatch@v1.1.3
+          #      with:
+          #        event-type: pulumi-runner-deploy
+          #        token: ${{ secrets.GH_ACTIONS_TOKEN }}
+          #        repository: ${{ github.repository }}
+          #        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'

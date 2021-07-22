@@ -19,12 +19,17 @@ ARG DNF_LIST1="\
   coreutils-single \
   glibc-minimal-langpack \
 "
-
 ARG NPM_LIST="\
   @pulumi/eks \
   @pulumi/awsx \
   @pulumi/pulumi \
   @pulumi/kubernetes \
+"
+ARG PIP_LIST"\
+  pip \
+  boto \
+  boto3 \
+  botocore \
 "
 #################################################################################
 # DNF Package Install Flags
@@ -64,6 +69,14 @@ COPY --from=builder /rootfs /
 RUN set -ex \
      && npm --version \
      && node --version \
+    && echo
+
+RUN set -ex \
+     && python3 -m pip install --upgrade \
+                   pip \
+                   boto \
+                   boto3 \
+                   botocore \
     && echo
 
 # Install AWS CLI v2
