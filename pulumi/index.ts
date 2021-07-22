@@ -37,6 +37,15 @@ const cluster = new eks.Cluster("keks-cluster", {
 
 // Create S3 Bucket for KUBECONFIG
 const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket")
+const keksAdminBucketObject = eksCluster.kubeconfig.apply(
+  (config) =>
+    new BucketObject("keksAdminBucketObject", {
+      key: "kubeconfig",
+      bucket: keksAdminBucket.id,
+      source: new StringAsset(config),
+      serverSideEncryption: "aws:kms",
+    })
+)
 /*
 const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
 const keksAdminBucketObject = new aws.s3.BucketObject("keksAdminBucketObject", {
