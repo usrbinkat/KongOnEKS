@@ -10,6 +10,7 @@ ARG DNF_LIST1="\
   git \
   bash \
   curl \
+  which \
   unzip \
   rsync \
   bsdtar \
