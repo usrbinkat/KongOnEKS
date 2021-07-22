@@ -19,10 +19,11 @@ jobs:
         ref: ${{ github.event.client_payload.sha }}
     - name: Pulumi Runner Deploy
       run: |
-        set -x;
-        cd $(pwd)/pulumi;
-        npm install;
+        set -x; cd $(pwd)/pulumi; npm install;
         pulumi up --stack KongOnEKS --yes --non-interactive --suppress-outputs;
-#       pulumi stack --stack KongOnEKS output kubeconfig | tee /tmp/kubeconfig;
-#       aws s3 cp /tmp/kubeconfig s3://$(pulumi stack --stack KongOnEKS output adminBucketName)/kubeconfig;
-
+    - name: Pulumi Runner Pull .kube/config for subsequent tasks
+      run: "mkdir -p /root/.kube; cd $(pwd)/pulumi; pulumi stack --stack KongOnEKS output kubeconfig > /root/.kube/config"
+    - name: Pulumi Runner Pull .kube/config for subsequent tasks
+      run: "cat /root/.kube/config"
+    - name: Pulumi Runner Test .kube/config
+      run: "kubectl get nodes"

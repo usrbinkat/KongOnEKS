@@ -35,26 +35,17 @@ const cluster = new eks.Cluster("keks-cluster", {
     ],
 });
 
-// Create S3 Bucket for KUBECONFIG
-const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket")
-const keksAdminBucketObject = eksCluster.kubeconfig.apply(
+// Create S3 Bucket with KUBECONFIG as object
+// TODO move away from kubeconfig reliance & leverage oidc / rbac natively on AWS for api auth
+const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
+const keksAdminBucketObject = cluster.kubeconfig.apply(
   (config) =>
-    new BucketObject("keksAdminBucketObject", {
+    new aws.s3.BucketObject("keksAdminBucketObject", {
       key: "kubeconfig",
       bucket: keksAdminBucket.id,
-      source: new StringAsset(config),
+      source: new pulumi.asset.StringAsset(JSON.stringify(config)),
       serverSideEncryption: "aws:kms",
-    })
-)
-/*
-const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
-const keksAdminBucketObject = new aws.s3.BucketObject("keksAdminBucketObject", {
-    key: "kubeconfig",
-    bucket: keksAdminBucket.id,
-    source: new pulumi.asset.StringAsset(String(cluster.kubeconfig)),
-    serverSideEncryption: "aws:kms",
-});
-*/
+}))
 
 // Export Values
 // Subnet ID's
