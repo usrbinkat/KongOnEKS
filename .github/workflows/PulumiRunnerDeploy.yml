@@ -24,19 +24,20 @@ jobs:
       with:
         ref: ${{ github.event.client_payload.sha }}
 
-    - name: Pulumi Runner test aws cli II
-      run: "/usr/local/bin/aws sts get-caller-identity"
+    - name: Test aws cli
+      run: "aws sts get-caller-identity"
 
     - name: Install NPM Dependencies
-      run: npm install
       working-directory: pulumi
+      run: "npm install"
 
-    - name: Pulumi Runner Deploy
-      run: pulumi up --stack KongOnEKS --yes --non-interactive --suppress-outputs
+    - name: Pulumi Up
       working-directory: pulumi
+      run: "pulumi up --stack KongOnEKS --yes --non-interactive --suppress-outputs"
 
     - name: Pull .kube/config for subsequent tasks
-      run: "cd $(pwd)/pulumi; pulumi stack --stack KongOnEKS output kubeconfig > /root/.kube/config"
+      working-directory: pulumi
+      run: "pulumi stack --stack KongOnEKS output kubeconfig > /root/.kube/config"
 
     - name: Test Kubeconfig | get nodes
       run: "KUBECONFIG=/root/.kube/config kubectl get nodes"
