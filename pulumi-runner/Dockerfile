@@ -26,12 +26,6 @@ ARG NPM_LIST="\
   @pulumi/pulumi \
   @pulumi/kubernetes \
 "
-ARG PIP_LIST"\
-  pip \
-  boto \
-  boto3 \
-  botocore \
-"
 #################################################################################
 # DNF Package Install Flags
 ARG DNF_FLAGS="\
@@ -59,6 +53,7 @@ RUN set -ex \
                        --installroot /rootfs nodejs npm nodejs-nodemon nss_wrapper           \
      && dnf clean all ${DNF_FLAGS}                                                           \
      && rm -rf ${BUILD_PATH}/var/cache/*                                                     \
+     && mkdir -p ${BUILD_PATH}/root/.kube                                                    \
     && echo
 
 #################################################################################
