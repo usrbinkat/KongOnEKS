@@ -103,7 +103,9 @@ RUN set -ex \
 # Add static artifacts from repo
 ADD ./rootfs /
 
-ENV PULUMI_CONFIG_PASSPHRASE=pulumi
+ENV \
+  KUBECONFIG=/root/.kube/config \
+  PULUMI_CONFIG_PASSPHRASE=pulumi
 WORKDIR /pulumi
 CMD ["/entrypoint.sh"]
 

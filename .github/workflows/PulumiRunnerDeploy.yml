@@ -26,4 +26,4 @@ jobs:
     - name: Pulumi Runner Pull .kube/config for subsequent tasks
       run: "cat /root/.kube/config"
     - name: Pulumi Runner Test .kube/config
-      run: "kubectl get nodes"
+      run: "KUBECONFIG=/root/.kube/config kubectl get nodes"
