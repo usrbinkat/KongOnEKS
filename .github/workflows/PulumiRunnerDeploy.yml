@@ -2,6 +2,7 @@ name: pulumi-deploy
 on:
   repository_dispatch:
     types: [pulumi-runner-deploy]
+
 jobs:
   deploy:
     runs-on: ubuntu-20.04
