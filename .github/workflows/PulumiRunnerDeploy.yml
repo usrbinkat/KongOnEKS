@@ -9,6 +9,7 @@ jobs:
     container:
       image: ghcr.io/${{ github.actor }}/pulumi-runner:latest
       env:
+        PATH: /root/.local/bin:/root/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
@@ -26,9 +27,9 @@ jobs:
       run: "mkdir -p /root/.kube; cd $(pwd)/pulumi; pulumi stack --stack KongOnEKS output kubeconfig > /root/.kube/config"
     - name: Print PATH env var
       run: "echo $PATH"
-    - name: Pulumi Runner test aws cli I
-      run: "which aws"
+    - name: Test resolve
+      run: "curl -L https://sts.amazonaws.com/ -s &>/dev/null ; echo $?"
     - name: Pulumi Runner test aws cli II
-      run: "aws sts get-caller-identity"
+      run: "/usr/local/bin/aws sts get-caller-identity"
 #   - name: Pulumi Runner Test .kube/config
 #     run: "KUBECONFIG=/root/.kube/config kubectl get nodes"
