@@ -79,6 +79,17 @@ RUN set -ex \
                    botocore \
     && echo
 
+# Add Kubectl Binary
+ARG varverkubectl=${varverkubectl}
+ENV varverkubectl=${varverkubectl}
+ARG urlKubectl="https://storage.googleapis.com/kubernetes-release/release/${varverkubectl}/bin/linux/amd64/kubectl"
+RUN set -ex \
+     && curl -L ${urlKubectl} --output /bin/kubectl                             \
+     && chmod +x /bin/kubectl                                                   \
+     && chmod 600 /root/.kube/config                                            \
+     && kubectl version --client --short || exit 1                              \
+    && echo
+
 # Install helm cli
 ARG varverhelm="${varVerHelm}"
 ARG varUrlHelm="https://get.helm.sh/helm-v${varverhelm}-linux-amd64.tar.gz"
@@ -93,28 +104,6 @@ RUN set -ex                                                                     
      && helm repo update                                                        \
     && echo
 
-# Install AWS CLI v2
-ARG urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
-RUN set -ex \
-     && mkdir -p /tmp/aws                                                       \
-     && cd /tmp/aws                                                             \
-     && curl ${urlAwsCli} --output /tmp/aws/awscliv2.zip                        \
-     && unzip awscliv2.zip                                                      \
-     && ./aws/install                                                           \
-     && aws --version || exit 1                                                 \
-     && rm -rf /tmp/aws                                                         \
-    && echo
-
-# Add Kubectl Binary
-ARG varverkubectl=${varverkubectl}
-ENV varverkubectl=${varverkubectl}
-ARG urlKubectl="https://storage.googleapis.com/kubernetes-release/release/${varverkubectl}/bin/linux/amd64/kubectl"
-RUN set -ex \
-     && curl -L ${urlKubectl} --output /bin/kubectl                             \
-     && chmod +x /bin/kubectl                                                   \
-     && kubectl version --client --short || exit 1                              \
-    && echo
-
 # Add Pulumi binary
 ARG varverpulumi="${varverpulumi}"
 ENV varverpulumi="${varverpulumi}"
@@ -125,6 +114,18 @@ RUN set -ex \
      && mv /tmp/pulumi/* /usr/local/bin/                                        \
      && rm -rf /tmp/pulumi                                                      \
      && pulumi version                                                          \
+    && echo
+
+# Install AWS CLI v2
+ARG urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+RUN set -ex \
+     && mkdir -p /tmp/aws                                                       \
+     && cd /tmp/aws                                                             \
+     && curl ${urlAwsCli} --output /tmp/aws/awscliv2.zip                        \
+     && unzip awscliv2.zip                                                      \
+     && ./aws/install                                                           \
+     && aws --version || exit 1                                                 \
+     && rm -rf /tmp/aws                                                         \
     && echo
 
 # Add static artifacts from repo
