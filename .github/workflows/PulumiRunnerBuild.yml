@@ -13,6 +13,7 @@ jobs:
         set -x ; \
         echo "varrundate=$(date +%y%m%d%I%M%S)" >> ${GITHUB_ENV};\
         echo "varverkubectl=$(curl -sL curl -L -s https://dl.k8s.io/release/stable.txt)" >> ${GITHUB_ENV};\
+        echo "varverhelm=$(curl -s https://api.github.com/repos/helm/helm/releases/latest | awk -F '["v,]' '/tag_name/{print $5}')" >> ${GITHUB_ENV};\
         echo "varverpulumi=$(curl -s https://api.github.com/repos/pulumi/pulumi/releases/latest | awk -F '["v,]' '/tag_name/{print $5}')" >> ${GITHUB_ENV};\
         echo;  
 
@@ -46,6 +47,7 @@ jobs:
           ghcr.io/${{ github.actor }}/${{ github.workflow }}:${{ github.sha }}
         build-args: |
           varrundate=${{ env.varrundate }}
+          varverhelm=${{ env.varverhelm }}
           varverpulumi=${{ env.varverpulumi }}
           varverkubectl=${{ env.varverkubectl }}
  

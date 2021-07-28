@@ -3,65 +3,29 @@ import * as awsx from "@pulumi/awsx";
 import * as aws from "@pulumi/aws";
 import * as eks from "@pulumi/eks";
 
-// Create a VPC
-const vpc = new awsx.ec2.Vpc("keks-vpc", {
-    cidrBlock: "172.16.0.0/16",
-    numberOfNatGateways: 1,
-    numberOfAvailabilityZones: 3,
-//    availabilityZones: [
-//        'us-east-1a',
-//        'us-east-1b',
-//        'us-east-1c'
-//    ],
-    subnets: [
-        { type: "public",  name: "public"  }, 
-//      { type: "private", name: "private" }
-    ]
-},{customTimeouts: {create: "30m"}});
-
-// Create an EKS cluster with the default configuration.
-const cluster = new eks.Cluster("keks-cluster", {
-    vpcId: vpc.id,
-    minSize: 2,
-    maxSize: 6,
-    desiredCapacity: 3,
-    publicSubnetIds: vpc.publicSubnetIds,
-//  privateSubnetIds: vpc.privateSubnetIds,
-    nodeAssociatePublicIpAddress: true,
-    enabledClusterLogTypes: [
-        "api",
-        "audit",
-        "authenticator",
-    ],
-},{customTimeouts: {create: "30m"}});
-
-// Create S3 Bucket with KUBECONFIG as object
-// TODO move away from kubeconfig reliance & leverage oidc / rbac natively on AWS for api auth
-const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
-const keksAdminBucketObject = cluster.kubeconfig.apply(
-  (config) =>
-    new aws.s3.BucketObject("keksAdminBucketObject", {
-      key: "kubeconfig",
-      bucket: keksAdminBucket.id,
-      source: new pulumi.asset.StringAsset(JSON.stringify(config)),
-      serverSideEncryption: "aws:kms",
-}))
-
 // Set Database Password:
 // ~$ pulumi config set --stack KongOnEKS --secret kong:dbPassword password
 const config = new pulumi.Config("kong");
 const dbPassword = config.requireSecret("dbPassword");
 
-const dbSubnets = new aws.rds.SubnetGroup("dbsubnets", {
-  // TODO migrate to private subnet id(s)
-  //subnetIds: vpc.privateSubnetIds,
-  subnetIds: vpc.publicSubnetIds,
+////////////////////////////////////////////////////////////////////////////////
+// Create a VPC
+const vpc = new awsx.ec2.Vpc("keks-vpc", {
+  cidrBlock: "172.16.0.0/16",
+  numberOfNatGateways: 1,
+  numberOfAvailabilityZones: 3,
+  subnets: [
+    { type: "public",  name: "public"  }, 
+  //TODO: enable private subnets
+  //  { type: "private", name: "private" }
+  ]
+},{customTimeouts: {create: "30m"}});
 
-});
-
+// RDS Security Group
 const rdsSecurityGroup = new aws.ec2.SecurityGroup("dbsecgrp", {
   vpcId: vpc.id,
   ingress: [{
+    description: "Postgres Listen Port",
     protocol: "tcp",
     fromPort: 5432,
     toPort: 5432,
@@ -75,35 +39,75 @@ const rdsSecurityGroup = new aws.ec2.SecurityGroup("dbsecgrp", {
     ipv6CidrBlocks: ["::/0"],
   }],
   tags: {
-    Name: "postgresdb_allow_tls",
+    Name: "postgresdb_listen_5432"
   }
 });
 
+// RDS Subnet attachment
+const dbSubnets = new aws.rds.SubnetGroup("dbsubnets", {
+  subnetIds: vpc.publicSubnetIds,
+  // TODO migrate to private subnet id(s)
+  //subnetIds: vpc.privateSubnetIds,
+});
+
+// RDS Postgres Database
+// - kong configuration store
+// https://www.pulumi.com/docs/reference/pkg/aws/rds/instance/
 const db = new aws.rds.Instance("postgresdb", {
   name: "kong",
   username: "kong",
   password: dbPassword,
   allocatedStorage: 20,
   engine: "postgres",
-
+  multiAz: true,
+  port: 5432,
   vpcSecurityGroupIds: [rdsSecurityGroup.id],
   dbSubnetGroupName: dbSubnets.id,
   instanceClass: "db.t2.micro",
   publiclyAccessible: true,
   skipFinalSnapshot: true,
+  tags: {
+    Name: "KongOnEKS_PostgresDB"
+  }
 });
 
+// Create an EKS cluster with the default configuration.
+const cluster = new eks.Cluster("keks-cluster", {
+  vpcId: vpc.id,
+  minSize: 2,
+  maxSize: 6,
+  desiredCapacity: 3,
+  publicSubnetIds: vpc.publicSubnetIds,
+  //TODO: enable private subnets
+  //privateSubnetIds: vpc.privateSubnetIds,
+  nodeAssociatePublicIpAddress: true,
+  enabledClusterLogTypes: [
+    "api",
+    "audit",
+    "authenticator",
+  ],
+},{customTimeouts: {create: "30m"}});
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Export Values
-// Subnet ID's
-export const vpcPublicSubnetIds = vpc.publicSubnetIds;
-export const vpcPrivateSubnetIds = vpc.privateSubnetIds;
-// export const subnetPublicAZs = () => {
-//   return vpc.getSubnets("public").map(x => x.subnet.availabilityZoneId);
-// };
+// TODO:
+// - deprecate kubeconfig reliance
+// - leverage oidc / rbac natively on AWS for api auth
+
+// Create S3 Bucket with KUBECONFIG as object
+const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
+const keksAdminBucketObject = cluster.kubeconfig.apply(
+  (config) =>
+  new aws.s3.BucketObject("keksAdminBucketObject", {
+    key: "kubeconfig",
+    bucket: keksAdminBucket.id,
+    source: new pulumi.asset.StringAsset(JSON.stringify(config)),
+    serverSideEncryption: "aws:kms",
+}))
 
 // VPC ID
 export const vpcId = vpc.id;
-// Export the name of the bucket
+
+// name of admin kubeconfig bucket
 export const adminBucketName = keksAdminBucket.id;
-// Export the cluster's kubeconfig.
-export const kubeconfig = cluster.kubeconfig;

@@ -26,6 +26,7 @@ ARG NPM_LIST="\
   @pulumi/pulumi \
   @pulumi/kubernetes \
 "
+
 #################################################################################
 # DNF Package Install Flags
 ARG DNF_FLAGS="\
@@ -73,6 +74,18 @@ RUN set -ex \
                    boto \
                    boto3 \
                    botocore \
+    && echo
+
+# Install helm cli
+ARG varverhelm="${varVerHelm}"
+ARG varUrlHelm="https://get.helm.sh/helm-v${varverhelm}-linux-amd64.tar.gz"
+RUN set -ex                                                                     \
+     && curl -L ${varUrlHelm}                                                   \
+        | tar xzvf - --directory /tmp linux-amd64/helm                          \
+     && mv /tmp/linux-amd64/helm /bin/helm                                      \
+     && rm -rf /tmp/linux-amd64                                                 \
+     && chmod +x /bin/helm                                                      \
+     && /bin/helm version                                                       \
     && echo
 
 # Install AWS CLI v2
