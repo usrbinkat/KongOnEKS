@@ -62,6 +62,9 @@ RUN set -ex \
 FROM scratch
 COPY --from=builder /rootfs /
 
+# Add static artifacts from repo
+ADD ./rootfs /
+
 # Test Node & NPM Installation
 RUN set -ex \
      && npm --version \
@@ -86,6 +89,8 @@ RUN set -ex                                                                     
      && rm -rf /tmp/linux-amd64                                                 \
      && chmod +x /bin/helm                                                      \
      && /bin/helm version                                                       \
+     && helm repo add kong https://charts.konghq.com                            \
+     && helm repo update                                                        \
     && echo
 
 # Install AWS CLI v2
