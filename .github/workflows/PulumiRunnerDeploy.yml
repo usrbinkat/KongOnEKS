@@ -33,7 +33,9 @@ jobs:
 
     - name: Pulumi Up
       working-directory: pulumi
-      run: "pulumi up --stack KongOnEKS --yes --non-interactive --suppress-outputs"
+      run: |
+        pulumi config set --stack KongOnEKS --secret kong:dbPassword ${{ secrets.KONG_POSTGRES_PASSWD }}
+        pulumi up --stack KongOnEKS --yes --non-interactive --suppress-outputs
 
     - name: Pull .kube/config for subsequent tasks
       working-directory: pulumi
