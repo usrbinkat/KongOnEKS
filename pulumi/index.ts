@@ -17,7 +17,7 @@ const vpc = new awsx.ec2.Vpc("keks-vpc", {
         { type: "public",  name: "public"  }, 
 //      { type: "private", name: "private" }
     ]
-});
+},{customTimeouts: {create: "30m"}});
 
 // Create an EKS cluster with the default configuration.
 const cluster = new eks.Cluster("keks-cluster", {
@@ -33,7 +33,7 @@ const cluster = new eks.Cluster("keks-cluster", {
         "audit",
         "authenticator",
     ],
-});
+},{customTimeouts: {create: "30m"}});
 
 // Create S3 Bucket with KUBECONFIG as object
 // TODO move away from kubeconfig reliance & leverage oidc / rbac natively on AWS for api auth
@@ -46,6 +46,52 @@ const keksAdminBucketObject = cluster.kubeconfig.apply(
       source: new pulumi.asset.StringAsset(JSON.stringify(config)),
       serverSideEncryption: "aws:kms",
 }))
+
+// Set Database Password:
+// ~$ pulumi config set --stack KongOnEKS --secret kong:dbPassword password
+const config = new pulumi.Config("kong");
+const dbPassword = config.requireSecret("dbPassword");
+
+const dbSubnets = new aws.rds.SubnetGroup("dbsubnets", {
+  // TODO migrate to private subnet id(s)
+  //subnetIds: vpc.privateSubnetIds,
+  subnetIds: vpc.publicSubnetIds,
+
+});
+
+const rdsSecurityGroup = new aws.ec2.SecurityGroup("dbsecgrp", {
+  vpcId: vpc.id,
+  ingress: [{
+    protocol: "tcp",
+    fromPort: 5432,
+    toPort: 5432,
+    cidrBlocks: [vpc.vpc.cidrBlock],
+  }],
+  egress: [{
+    fromPort: 0,
+    toPort: 0,
+    protocol: "-1",
+    cidrBlocks: ["0.0.0.0/0"],
+    ipv6CidrBlocks: ["::/0"],
+  }],
+  tags: {
+    Name: "postgresdb_allow_tls",
+  }
+});
+
+const db = new aws.rds.Instance("postgresdb", {
+  name: "kong",
+  username: "kong",
+  password: dbPassword,
+  allocatedStorage: 20,
+  engine: "postgres",
+
+  vpcSecurityGroupIds: [rdsSecurityGroup.id],
+  dbSubnetGroupName: dbSubnets.id,
+  instanceClass: "db.t2.micro",
+  publiclyAccessible: true,
+  skipFinalSnapshot: true,
+});
 
 // Export Values
 // Subnet ID's
