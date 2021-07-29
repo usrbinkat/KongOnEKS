@@ -118,9 +118,6 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
   },
 });
 
-// Export the public IP for Kong Proxy
-//export const frontendIp = frontend.status.loadBalancer.ingress[0].ip;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Export Values
