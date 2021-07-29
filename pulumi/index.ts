@@ -1,7 +1,8 @@
+import * as aws    from "@pulumi/aws";
+import * as eks    from "@pulumi/eks";
+import * as k8s    from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import * as awsx from "@pulumi/awsx";
-import * as aws from "@pulumi/aws";
-import * as eks from "@pulumi/eks";
+import * as awsx   from "@pulumi/awsx";
 
 // Set Database Password:
 // ~$ pulumi config set --stack KongOnEKS --secret kong:dbPassword password
@@ -10,6 +11,9 @@ const dbPassword = config.requireSecret("dbPassword");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create a VPC
+// TODO:
+// - variablize cluster name
+// - implement tagging on all resources
 const vpc = new awsx.ec2.Vpc("keks-vpc", {
   cidrBlock: "172.16.0.0/16",
   numberOfNatGateways: 1,
@@ -54,17 +58,23 @@ const dbSubnets = new aws.rds.SubnetGroup("dbsubnets", {
 // - kong configuration store
 // https://www.pulumi.com/docs/reference/pkg/aws/rds/instance/
 const db = new aws.rds.Instance("postgresdb", {
+  // TODO: 
+  // - variablize database name
+  // - variablize database uname
+  // - variablize instance type
+  // - variablize allocated storage
   name: "kong",
   username: "kong",
   password: dbPassword,
+  instanceClass: "db.t2.micro",
+  // TODO: disable publicly accessible
+  publiclyAccessible: true,
   allocatedStorage: 20,
   engine: "postgres",
   multiAz: true,
   port: 5432,
   vpcSecurityGroupIds: [rdsSecurityGroup.id],
   dbSubnetGroupName: dbSubnets.id,
-  instanceClass: "db.t2.micro",
-  publiclyAccessible: true,
   skipFinalSnapshot: true,
   tags: {
     Name: "KongOnEKS_PostgresDB"
@@ -88,6 +98,28 @@ const cluster = new eks.Cluster("keks-cluster", {
   ],
 },{customTimeouts: {create: "30m"}});
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Kong HELM Chart Deploy
+
+// Deploy the latest version of the stable/wordpress chart.
+const kongGateway = new k8s.helm.v3.Chart("gateway", {
+    repo: "kong",
+    chart: "kong",
+    fetchOpts:{
+        repo: "https://charts.konghq.com/",
+    },
+    values: {
+        controller: {
+            metrics: {
+                enabled: true,
+            }
+        }
+    },
+});
+
+// Export the public IP for Kong Proxy
+export const frontendIp = frontend.status.loadBalancer.ingress[0].ip;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Export Values
