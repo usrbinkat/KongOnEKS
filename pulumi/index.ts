@@ -104,22 +104,20 @@ const cluster = new eks.Cluster("keks-cluster", {
 
 // Deploy the latest version of the stable/wordpress chart.
 const kongGateway = new k8s.helm.v3.Chart("gateway", {
-    repo: "kong",
-    chart: "kong",
-    fetchOpts:{
-        repo: "https://charts.konghq.com/",
-    },
-    values: {
-        controller: {
-            metrics: {
-                enabled: true,
-            }
-        }
-    },
+  repo: "kong",
+  chart: "kong",
+  fetchOpts:{
+    repo: "https://charts.konghq.com/",
+  },
+  values: {
+    postgresql: {
+      enabled: true,
+    }
+  },
 });
 
 // Export the public IP for Kong Proxy
-export const frontendIp = frontend.status.loadBalancer.ingress[0].ip;
+//export const frontendIp = frontend.status.loadBalancer.ingress[0].ip;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Export Values
@@ -143,3 +141,7 @@ export const vpcId = vpc.id;
 
 // name of admin kubeconfig bucket
 export const adminBucketName = keksAdminBucket.id;
+
+// Export the cluster's kubeconfig.
+// grab from s3 with cmd: 
+export const kubeconfig = cluster.kubeconfig;
