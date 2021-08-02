@@ -71,56 +71,60 @@ RUN set -ex \
      && node --version \
     && echo
 
-RUN set -ex \
-     && python3 -m pip install --upgrade \
-                   pip \
-                   boto \
-                   boto3 \
-                   botocore \
-    && echo
-
 # Add Kubectl Binary
-ARG varverkubectl=${varverkubectl}
-ENV varverkubectl=${varverkubectl}
-ARG urlKubectl="https://storage.googleapis.com/kubernetes-release/release/${varverkubectl}/bin/linux/amd64/kubectl"
 RUN set -ex \
-     && curl -L ${urlKubectl} --output /bin/kubectl                             \
-     && chmod +x /bin/kubectl                                                   \
-     && chmod 600 /root/.kube/config                                            \
-     && kubectl version --client --short || exit 1                              \
+     && export urlKubectlRelease="https://dl.k8s.io/release/stable.txt"                   \
+     && export urlKubectlVersion="$(curl -sL curl -L -s ${urlKubectlRelease})"            \
+     && export urlKubectlBase="https://storage.googleapis.com/kubernetes-release/release" \
+     && export urlKubectlBin="bin/linux/amd64/kubectl"                                    \
+     && curl -L "${urlKubectlBase}/${urlKubectlVersion}/${urlKubectlBin}"          \
+             --output /bin/kubectl                                                 \
+     && chmod +x /bin/kubectl                                                      \
+     && chmod 600 /root/.kube/config                                               \
+     && kubectl version --client --short || exit 1                                 \
     && echo
 
 # Install helm cli
-ARG varverhelm="${varVerHelm}"
-ARG varUrlHelm="https://get.helm.sh/helm-v${varverhelm}-linux-amd64.tar.gz"
-RUN set -ex                                                                     \
-     && curl -L ${varUrlHelm}                                                   \
-        | tar xzvf - --directory /tmp linux-amd64/helm                          \
-     && mv /tmp/linux-amd64/helm /bin/helm                                      \
-     && rm -rf /tmp/linux-amd64                                                 \
-     && chmod +x /bin/helm                                                      \
-     && /bin/helm version                                                       \
-     && helm repo add kong https://charts.konghq.com                            \
-     && helm repo update                                                        \
+RUN set -ex                                                                                 \
+     && export urlHelmRelease="https://api.github.com/repos/helm/helm/releases/latest"             \
+     && export urlHelmVersion=$(curl -s ${urlHelmRelease} | awk -F '["v,]' '/tag_name/{print $5}') \
+     && export urlHelmBase="https://get.helm.sh"                                                  \
+     && export urlHelmBin="helm-v${urlHelmVersion}-linux-amd64.tar.gz"                             \
+     && export urlHelm="${urlHelmBase}/${urlHelmBin}"                                                             \
+     && curl -L ${urlHelm}                                                               \
+        | tar xzvf - --directory /tmp linux-amd64/helm                                      \
+     && mv /tmp/linux-amd64/helm /bin/helm                                                  \
+     && rm -rf /tmp/linux-amd64                                                             \
+     && chmod +x /bin/helm                                                                  \
+     && /bin/helm version                                                                   \
+     && helm repo add kong https://charts.konghq.com                                        \
+     && helm repo update                                                                    \
     && echo
 
 # Add Pulumi binary
-ARG varverpulumi="${varverpulumi}"
-ENV varverpulumi="${varverpulumi}"
-ARG urlPulumiBin="https://github.com/pulumi/pulumi/releases/download/v${varverpulumi}/pulumi-v${varverpulumi}-linux-x64.tar.gz"
 RUN set -ex \
-     && curl -L ${urlPulumiBin}                                                 \
-        | tar xzvf - --directory /tmp                                           \
-     && mv /tmp/pulumi/* /usr/local/bin/                                        \
-     && rm -rf /tmp/pulumi                                                      \
-     && pulumi version                                                          \
+     && export urlPulumiRelease="https://api.github.com/repos/pulumi/pulumi/releases/latest"             \
+     && export urlPulumiVersion="$(curl -s ${urlPulumiRelease} | awk -F '["v,]' '/tag_name/{print $5}')" \
+     && export urlPulumiBase="https://github.com/pulumi/pulumi/releases/download"                        \
+     && export urlPulumiBin="pulumi-v${urlPulumiVersion}-linux-x64.tar.gz"                               \
+     && export urlPulumi="${urlPulumiBase}/v${urlPulumiVersion}/${urlPulumiBin}"                         \
+     && curl -L ${urlPulumi}                                                                      \
+        | tar xzvf - --directory /tmp                                                             \
+     && mv /tmp/pulumi/* /usr/local/bin/                                                          \
+     && rm -rf /tmp/pulumi                                                                        \
+     && pulumi version                                                                            \
     && echo
 
 # Install AWS CLI v2
-ARG urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
 RUN set -ex \
+     && python3 -m pip install --upgrade                                        \
+                   pip                                                          \
+                   boto                                                         \
+                   boto3                                                        \
+                   botocore                                                     \
      && mkdir -p /tmp/aws                                                       \
      && cd /tmp/aws                                                             \
+     && export urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"    \
      && curl ${urlAwsCli} --output /tmp/aws/awscliv2.zip                        \
      && unzip awscliv2.zip                                                      \
      && ./aws/install                                                           \

@@ -98,34 +98,12 @@ const cluster = new eks.Cluster("keks-cluster", {
   ],
 },{customTimeouts: {create: "30m"}});
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Kong HELM Chart Deploy
-
-// Deploy the latest version of the stable/wordpress chart.
-const kongGateway = new k8s.helm.v3.Chart("gateway", {
-  repo: "kong",
-  chart: "kong",
-  // TODO: tear down and change namespace to `kong`
-  namespace: "default",
-  fetchOpts:{
-    repo: "https://charts.konghq.com/",
-  },
-  values: {
-    postgresql: {
-      enabled: true,
-    }
-  },
-});
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Export Values
-// TODO:
-// - deprecate kubeconfig reliance
-// - leverage oidc / rbac natively on AWS for api auth
+// Export the cluster's kubeconfig.
+const kubeconfig = cluster.kubeconfig;
 
 // Create S3 Bucket with KUBECONFIG as object
+// Pull kubeconfig from s3 via aws cli:
+//   ~$ aws s3 cp s3://$(pulumi stack --stack KongOnEKS output adminBucketName)/kubeconfig ~/.kube/config
 const keksAdminBucket = new aws.s3.Bucket("keksAdminBucket", {acl: "private"});
 const keksAdminBucketObject = cluster.kubeconfig.apply(
   (config) =>
@@ -136,12 +114,43 @@ const keksAdminBucketObject = cluster.kubeconfig.apply(
     serverSideEncryption: "aws:kms",
 }))
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Kong HELM Chart Deploy
+
+// Configure EKS KUBECONFIG provider
+export const provider = new k8s.Provider("k8s", {kubeconfig: kubeconfig})
+
+// create namespace 'kong'
+const namespace = new k8s.core.v1.Namespace("ns", {metadata: {name: "kong",}},{provider: provider});
+
+// Deploy the latest version of the stable/wordpress chart.
+const kongGateway = new k8s.helm.v3.Chart("gateway", {
+  repo: "kong",
+  chart: "kong",
+  namespace: "kong",
+  fetchOpts:{
+    repo: "https://charts.konghq.com/",
+  },
+  values: {
+    postgresql: {
+      enabled: false,
+    }
+  },
+},{
+  providers: {kubernetes: provider},
+  customTimeouts: {create: "30m"}
+});
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Export Values
+// TODO:
+// - deprecate kubeconfig reliance
+// - leverage oidc / rbac natively on AWS for api auth
+
 // VPC ID
 export const vpcId = vpc.id;
 
 // name of admin kubeconfig bucket
 export const adminBucketName = keksAdminBucket.id;
-
-// Export the cluster's kubeconfig.
-// grab from s3 with cmd: 
-export const kubeconfig = cluster.kubeconfig;
