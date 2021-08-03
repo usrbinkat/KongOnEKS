@@ -99,7 +99,7 @@ const cluster = new eks.Cluster("keks-cluster", {
 },{customTimeouts: {create: "30m"}});
 
 // Export the cluster's kubeconfig.
-const kubeconfig = cluster.kubeconfig;
+export const kubeconfig = cluster.kubeconfig;
 
 // Create S3 Bucket with KUBECONFIG as object
 // Pull kubeconfig from s3 via aws cli:
