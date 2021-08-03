@@ -133,8 +133,11 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
     repo: "https://charts.konghq.com/",
   },
   values: {
+    ingressController: {
+      installCRDs: false
+    },
     postgresql: {
-      enabled: false,
+      enabled: false
     }
   },
 },{

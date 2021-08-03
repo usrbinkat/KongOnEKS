@@ -1,0 +1,8 @@
+---
+apiVersion: shipwright.io/v1alpha1
+kind: BuildRun
+metadata:
+  generateName: buildah-run-pulumi-runner-
+spec:
+  buildRef:
+    name: buildah-build-pulumi-runner

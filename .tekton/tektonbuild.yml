@@ -1,4 +1,8 @@
 ---
+# https://tekton.dev/docs/pipelines/install/
+# https://github.com/shipwright-io/build/blob/main/docs/development/authentication.md
+# https://github.com/shipwright-io/build/blob/main/samples/build/build_buildah_cr.yaml
+# https://tekton.dev/docs/pipelines/taskruns/
 # cat tektonbuild.yml | kubectl create -f -
 apiVersion: shipwright.io/v1alpha1
 kind: Build
@@ -14,11 +18,3 @@ spec:
   dockerfile: Dockerfile
   output:
     image: docker.io/katamo/pulumi
----
-apiVersion: shipwright.io/v1alpha1
-kind: BuildRun
-metadata:
-  generateName: buildah-run-pulumi-runner-
-spec:
-  buildRef:
-    name: buildah-build-pulumi-runner
