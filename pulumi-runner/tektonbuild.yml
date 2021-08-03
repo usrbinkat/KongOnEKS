@@ -1,0 +1,24 @@
+---
+# cat tektonbuild.yml | kubectl create -f -
+apiVersion: shipwright.io/v1alpha1
+kind: Build
+metadata:
+  name: buildah-build-pulumi-runner
+spec:
+  source:
+    url: https://{{ username }}:{{ token }}@github.com/usrbinkat/KongOnEKS.git
+    contextDir: pulumi-runner
+  strategy:
+    name: buildah
+    kind: ClusterBuildStrategy
+  dockerfile: Dockerfile
+  output:
+    image: docker.io/katamo/pulumi
+---
+apiVersion: shipwright.io/v1alpha1
+kind: BuildRun
+metadata:
+  generateName: buildah-run-pulumi-runner-
+spec:
+  buildRef:
+    name: buildah-build-pulumi-runner
