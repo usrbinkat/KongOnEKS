@@ -80,7 +80,6 @@ RUN set -ex \
      && curl -L "${urlKubectlBase}/${urlKubectlVersion}/${urlKubectlBin}"          \
              --output /bin/kubectl                                                 \
      && chmod +x /bin/kubectl                                                      \
-     && chmod 600 /root/.kube/config                                               \
      && kubectl version --client --short || exit 1                                 \
     && echo
 
