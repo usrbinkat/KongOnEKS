@@ -71,33 +71,50 @@ RUN set -ex \
      && node --version \
     && echo
 
+# Install AWS CLI v2
+RUN set -ex \
+     && python3 -m pip install --upgrade                                            \
+                   pip                                                              \
+                   boto                                                             \
+                   boto3                                                            \
+                   botocore                                                         \
+     && mkdir -p /tmp/aws                                                           \
+     && cd /tmp/aws                                                                 \
+     && export urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
+     && curl ${urlAwsCli} --output /tmp/aws/awscliv2.zip                            \
+     && unzip awscliv2.zip                                                          \
+     && ./aws/install                                                               \
+     && aws --version || exit 1                                                     \
+     && rm -rf /tmp/aws                                                             \
+    && echo
+
 # Add Kubectl Binary
 RUN set -ex \
      && export urlKubectlRelease="https://dl.k8s.io/release/stable.txt"                   \
      && export urlKubectlVersion="$(curl -sL curl -L -s ${urlKubectlRelease})"            \
      && export urlKubectlBase="https://storage.googleapis.com/kubernetes-release/release" \
      && export urlKubectlBin="bin/linux/amd64/kubectl"                                    \
-     && curl -L "${urlKubectlBase}/${urlKubectlVersion}/${urlKubectlBin}"          \
-             --output /bin/kubectl                                                 \
-     && chmod +x /bin/kubectl                                                      \
-     && kubectl version --client --short || exit 1                                 \
+     && curl -L "${urlKubectlBase}/${urlKubectlVersion}/${urlKubectlBin}"                 \
+             --output /bin/kubectl                                                        \
+     && chmod +x /bin/kubectl                                                             \
+     && kubectl version --client --short || exit 1                                        \
     && echo
 
 # Install helm cli
-RUN set -ex                                                                                 \
+RUN set -ex                                                                                        \
      && export urlHelmRelease="https://api.github.com/repos/helm/helm/releases/latest"             \
      && export urlHelmVersion=$(curl -s ${urlHelmRelease} | awk -F '["v,]' '/tag_name/{print $5}') \
-     && export urlHelmBase="https://get.helm.sh"                                                  \
+     && export urlHelmBase="https://get.helm.sh"                                                   \
      && export urlHelmBin="helm-v${urlHelmVersion}-linux-amd64.tar.gz"                             \
-     && export urlHelm="${urlHelmBase}/${urlHelmBin}"                                                             \
-     && curl -L ${urlHelm}                                                               \
-        | tar xzvf - --directory /tmp linux-amd64/helm                                      \
-     && mv /tmp/linux-amd64/helm /bin/helm                                                  \
-     && rm -rf /tmp/linux-amd64                                                             \
-     && chmod +x /bin/helm                                                                  \
-     && /bin/helm version                                                                   \
-     && helm repo add kong https://charts.konghq.com                                        \
-     && helm repo update                                                                    \
+     && export urlHelm="${urlHelmBase}/${urlHelmBin}"                                              \
+     && curl -L ${urlHelm}                                                                         \
+        | tar xzvf - --directory /tmp linux-amd64/helm                                             \
+     && mv /tmp/linux-amd64/helm /bin/helm                                                         \
+     && rm -rf /tmp/linux-amd64                                                                    \
+     && chmod +x /bin/helm                                                                         \
+     && /bin/helm version                                                                          \
+     && helm repo add kong https://charts.konghq.com                                               \
+     && helm repo update                                                                           \
     && echo
 
 # Add Pulumi binary
@@ -107,28 +124,11 @@ RUN set -ex \
      && export urlPulumiBase="https://github.com/pulumi/pulumi/releases/download"                        \
      && export urlPulumiBin="pulumi-v${urlPulumiVersion}-linux-x64.tar.gz"                               \
      && export urlPulumi="${urlPulumiBase}/v${urlPulumiVersion}/${urlPulumiBin}"                         \
-     && curl -L ${urlPulumi}                                                                      \
-        | tar xzvf - --directory /tmp                                                             \
-     && mv /tmp/pulumi/* /usr/local/bin/                                                          \
-     && rm -rf /tmp/pulumi                                                                        \
-     && pulumi version                                                                            \
-    && echo
-
-# Install AWS CLI v2
-RUN set -ex \
-     && python3 -m pip install --upgrade                                        \
-                   pip                                                          \
-                   boto                                                         \
-                   boto3                                                        \
-                   botocore                                                     \
-     && mkdir -p /tmp/aws                                                       \
-     && cd /tmp/aws                                                             \
-     && export urlAwsCli="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"    \
-     && curl ${urlAwsCli} --output /tmp/aws/awscliv2.zip                        \
-     && unzip awscliv2.zip                                                      \
-     && ./aws/install                                                           \
-     && aws --version || exit 1                                                 \
-     && rm -rf /tmp/aws                                                         \
+     && curl -L ${urlPulumi}                                                                             \
+        | tar xzvf - --directory /tmp                                                                    \
+     && mv /tmp/pulumi/* /usr/local/bin/                                                                 \
+     && rm -rf /tmp/pulumi                                                                               \
+     && pulumi version                                                                                   \
     && echo
 
 # Add static artifacts from repo
@@ -142,7 +142,7 @@ CMD ["/entrypoint.sh"]
 
 #################################################################################
 # Finalize Image
-MAINTAINER use-at-your-own-risk
+MAINTAINER="use-at-your-own-risk"
 LABEL \
   license=GPLv3                                                                 \
   name="kong-pulumi-runner"                                                     \

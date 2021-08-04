@@ -55,8 +55,12 @@ const dbSubnets = new aws.rds.SubnetGroup("dbsubnets", {
 });
 
 // RDS Postgres Database
+// Set RDS Password:
+//   ~$ pulumi --stack KongOnEKS config set dbPassword
 // - kong configuration store
 // https://www.pulumi.com/docs/reference/pkg/aws/rds/instance/
+// Terraform for review & enhancement considerations
+// - https://github.com/hashicorp/terraform-provider-aws/tree/master/examples/rds
 const db = new aws.rds.Instance("postgresdb", {
   // TODO: 
   // - variablize database name
@@ -73,6 +77,7 @@ const db = new aws.rds.Instance("postgresdb", {
   engine: "postgres",
   multiAz: true,
   port: 5432,
+  applyImmediately: true,
   vpcSecurityGroupIds: [rdsSecurityGroup.id],
   dbSubnetGroupName: dbSubnets.id,
   skipFinalSnapshot: true,
@@ -80,6 +85,7 @@ const db = new aws.rds.Instance("postgresdb", {
     Name: "KongOnEKS_PostgresDB"
   }
 });
+export const rdsIp = db.address;
 
 // Create an EKS cluster with the default configuration.
 const cluster = new eks.Cluster("keks-cluster", {
@@ -124,7 +130,7 @@ export const provider = new k8s.Provider("k8s", {kubeconfig: kubeconfig})
 // create namespace 'kong'
 const namespace = new k8s.core.v1.Namespace("ns", {metadata: {name: "kong",}},{provider: provider});
 
-// Deploy the latest version of the stable/wordpress chart.
+// Deploy the latest version of the kong/kong chart.
 const kongGateway = new k8s.helm.v3.Chart("gateway", {
   repo: "kong",
   chart: "kong",
@@ -133,6 +139,40 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
     repo: "https://charts.konghq.com/",
   },
   values: {
+    env: {
+      pg_port: "5432",
+      database: "postgres",
+      // TODO: convert to `valueFrom Secret`
+      password: "password",
+      // TODO: variablize from config
+      pg_user: "kong",
+      pg_password: dbPassword,
+      pg_database: "kong",
+      // TODO: variablize postgres host from pulumi rds endpoint output
+      pg_host: "postgresdb2876999.cnc7tkeqsmj9.us-east-1.rds.amazonaws.com",
+    },
+    enterprise: {
+      enabled: true,
+      license_secret: "kong-enterprise-license",
+      vitals: {
+        enabled: true
+      },
+    },
+    rbac: {
+      enabled: true
+    },
+    admin: {
+      enabled: true
+    },
+    manager: {
+      enabled: true
+    },
+    portal: {
+      enabled: true
+    },
+    portalapi: {
+      enabled: true
+    },
     ingressController: {
       installCRDs: false
     },
@@ -157,3 +197,38 @@ export const vpcId = vpc.id;
 
 // name of admin kubeconfig bucket
 export const adminBucketName = keksAdminBucket.id;
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+Notes:
+  Download kubeconfig from s3 via command:
+    ~$ aws s3 cp s3://$(pulumi stack --stack KongOnEKS output adminBucketName)/kubeconfig ~/.kube/config
+
+REFERENCES:
+  - https://github.com/Kong/aws-marketplace/blob/master/K4K8S/Kong%20for%20Kubernetes%20Enterprise.md
+
+TODO:
+  Create pulumi func for kong-enterprise-license
+    - (workaround) ~$ kubectl create secret generic kong-enterprise-license -n kong --from-file=/tmp/license
+
+  Create Pulumi func for super admin password
+    - (workaround) ~$ kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password=password
+
+  Create Pulumi func for kong manager & dev portal web gui session configuration
+    - (workaround) ~$ 
+cat <<EOF | tee /tmp/admin_gui_session_conf
+{"cookie_name":"admin_session","cookie_samesite":"off","secret":"password","cookie_secure":false,"storage":"kong"}
+EOF
+      - (workaround) ~$
+cat <<EOF | tee /tmp/portal_session_conf
+{"cookie_name":"portal_session","cookie_samesite":"off","secret":"password","cookie_secure":false,"storage":"kong"}
+EOF
+      - (workaround) ~$ kubectl create secret generic kong-session-config -n kong --from-file=/tmp/admin_gui_session_conf --from-file=/tmp/portal_session_conf
+
+// Create Kong License Kubernetes Secret
+const secretDatabaseConnection = new k8s.core.v1.Secret("kong-database-connect-string", {
+    stringData: {
+      kongDbPassword: dbPassword, // or could be process.env.DB_SECRET probably or some variation
+    },
+},{provider: provider});
+*/
