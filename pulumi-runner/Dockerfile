@@ -142,7 +142,7 @@ CMD ["/entrypoint.sh"]
 
 #################################################################################
 # Finalize Image
-MAINTAINER="use-at-your-own-risk"
+MAINTAINER use-at-your-own-risk 
 LABEL \
   license=GPLv3                                                                 \
   name="kong-pulumi-runner"                                                     \
