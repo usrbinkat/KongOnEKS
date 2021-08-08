@@ -117,6 +117,10 @@ const keksAdminBucketObject = cluster.kubeconfig.apply(
     key: "kubeconfig",
     bucket: keksAdminBucket.id,
     source: new pulumi.asset.StringAsset(JSON.stringify(config)),
+    /*
+    TODO: test following variation due to advice "Creating resources in apply is discoraged"
+    source: cluster.kubeconfig.apply(s => new pulumi.asset.StringAsset(JSON.stringify(s))),
+    */
     serverSideEncryption: "aws:kms",
 }))
 
@@ -130,7 +134,10 @@ export const provider = new k8s.Provider("k8s", {kubeconfig: kubeconfig})
 // create namespace 'kong'
 const namespace = new k8s.core.v1.Namespace("ns", {metadata: {name: "kong",}},{provider: provider});
 
-// Deploy the latest version of the kong/kong chart.
+// Deploy Kong Enterprise Controlplane from kong/kong helm chart.
+// TODO:
+//   - RFE: https://github.com/pulumi/pulumi-kubernetes/issues/555
+//   - Pulumi support for helm hooks still in progress
 const kongGateway = new k8s.helm.v3.Chart("gateway", {
   repo: "kong",
   chart: "kong",
@@ -141,6 +148,8 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
   values: {
     env: {
       pg_port: "5432",
+      role: "control_plane",
+      prefix: "/kong_prefix/",
       database: "postgres",
       // TODO: convert to `valueFrom Secret`
       password: "password",
@@ -150,9 +159,12 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
       pg_database: "kong",
       // TODO: variablize postgres host from pulumi rds endpoint output
       pg_host: "postgresdb2876999.cnc7tkeqsmj9.us-east-1.rds.amazonaws.com",
+      couster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
+      couster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key"
     },
     enterprise: {
       enabled: true,
+      // TODO: create secret from pulumi config https://git.io/JRBgk
       license_secret: "kong-enterprise-license",
       vitals: {
         enabled: true
@@ -162,7 +174,12 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
       enabled: true
     },
     admin: {
-      enabled: true
+      enabled: true,
+      http: {
+        enabled: true,
+        servicePort: 8001,
+        containerPort: 8001
+      }
     },
     manager: {
       enabled: true
@@ -173,7 +190,20 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
     portalapi: {
       enabled: true
     },
+    proxy: {
+      enabled: false
+    },
+    cluster: {
+      enabled: true,
+      tls: {
+        enabled: true,
+        servicePort: 8005,
+        containerPort: 8005,
+      }
+    },
+    secretVolumes: ["kong-cluster-cert"],
     ingressController: {
+      enabled: false,
       installCRDs: false
     },
     postgresql: {
@@ -185,6 +215,52 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
   customTimeouts: {create: "30m"}
 });
 
+// Deploy Kong Enterprise Controlplane from kong/kong helm chart.
+// TODO:
+//  - automate controlplane / dataplane pki trust secret
+const kongGatewayDataPlane = new k8s.helm.v3.Chart("gatewayDataPlane", {
+  repo: "kong",
+  chart: "kong",
+  namespace: "kong-proxy",
+  fetchOpts:{
+    repo: "https://charts.konghq.com/",
+  },
+  values: {
+    env: {
+      database: "off",
+      role: "data_plane",
+      prefix: "/kong_prefix/",
+      cluster_control_plane: "gateway-kong-cluster.kong.svc.cluster.local:8005",
+      lua_ssl_trusted_certificate: "/etc/secrets/kong-cluster-cert/tls.crt",
+      couster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
+      couster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key"
+    },
+    admin: {enabled: false},
+    secretVolumes: ["kong-cluster-cert"],
+    ingressController: {
+      enabled: false,
+      installCRDs: false
+    },
+    manager: {
+      enabled: false
+    },
+    portal: {
+      enabled: false
+    },
+    portalapi: {
+      enabled: false
+    },
+    proxy: {
+      enabled: true
+    },
+    cluster: {
+      enabled: false
+    }
+  },
+},{
+  providers: {kubernetes: provider},
+  customTimeouts: {create: "30m"}
+});
 
 ////////////////////////////////////////////////////////////////////////////////
 // Export Values
@@ -213,6 +289,9 @@ TODO:
 
   Create Pulumi func for super admin password
     - (workaround) ~$ kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password=password
+
+  Create modular structure for IaC
+    - https://github.com/pulumi/examples/tree/master/classic-azure-ts-cosmosapp-component
 
   Create Pulumi func for kong manager & dev portal web gui session configuration
     - (workaround) ~$ 
