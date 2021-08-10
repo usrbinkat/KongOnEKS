@@ -48,6 +48,9 @@ const rdsSecurityGroup = new aws.ec2.SecurityGroup("dbsecgrp", {
 });
 
 // RDS Subnet attachment
+// TODO: convert to rds.Cluster
+// REF: https://www.pulumi.com/docs/guides/crosswalk/aws/vpc/#configuring-subnets-for-a-vpc
+// REF: https://github.com/pulumi/pulumi-aws/blob/0b73446ce5361fcd9f313d7e5ac36e5668936d31/sdk/nodejs/rds/cluster.ts#L75
 const dbSubnets = new aws.rds.SubnetGroup("dbsubnets", {
   subnetIds: vpc.publicSubnetIds,
   // TODO migrate to private subnet id(s)
@@ -124,7 +127,6 @@ const keksAdminBucketObject = cluster.kubeconfig.apply(
     serverSideEncryption: "aws:kms",
 }))
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Kong HELM Chart Deploy
 
@@ -134,11 +136,12 @@ export const provider = new k8s.Provider("k8s", {kubeconfig: kubeconfig})
 // create namespace 'kong'
 const namespace = new k8s.core.v1.Namespace("ns", {metadata: {name: "kong",}},{provider: provider});
 
+/*
 // Deploy Kong Enterprise Controlplane from kong/kong helm chart.
 // TODO:
 //   - RFE: https://github.com/pulumi/pulumi-kubernetes/issues/555
 //   - Pulumi support for helm hooks still in progress
-const kongGateway = new k8s.helm.v3.Chart("gateway", {
+const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
   repo: "kong",
   chart: "kong",
   namespace: "kong",
@@ -218,7 +221,7 @@ const kongGateway = new k8s.helm.v3.Chart("gateway", {
 // Deploy Kong Enterprise Controlplane from kong/kong helm chart.
 // TODO:
 //  - automate controlplane / dataplane pki trust secret
-const kongGatewayDataPlane = new k8s.helm.v3.Chart("gatewayDataPlane", {
+const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
   repo: "kong",
   chart: "kong",
   namespace: "kong-proxy",
@@ -282,8 +285,13 @@ Notes:
 
 REFERENCES:
   - https://github.com/Kong/aws-marketplace/blob/master/K4K8S/Kong%20for%20Kubernetes%20Enterprise.md
+  - https://www.pulumi.com/docs/intro/concepts/secrets/#using-configuration-and-secrets-in-code
 
 TODO:
+  Convert Secrets Management to AWS kms
+    - https://www.pulumi.com/docs/reference/cli/pulumi_stack_init/#pulumi-stack-init
+    - https://www.pulumi.com/docs/intro/concepts/secrets/#aws-key-management-service-kms
+
   Create pulumi func for kong-enterprise-license
     - (workaround) ~$ kubectl create secret generic kong-enterprise-license -n kong --from-file=/tmp/license
 

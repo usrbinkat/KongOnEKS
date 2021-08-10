@@ -1,0 +1,194 @@
+deployment:
+  kong:
+    enabled: true
+    daemonset: false
+image:
+  repository: docker.io/kong/kong-gateway
+  tag: "2.4-alpine"
+  pullPolicy: IfNotPresent
+  pullSecrets: {}
+env:
+  role: data_plane
+  log_level: debug
+  database: "off"
+  password: "password"
+  prefix: /kong_prefix/
+  nginx_worker_processes: "2"
+  proxy_error_log: /dev/stderr
+  admin_error_log: /dev/stderr
+  proxy_access_log: /dev/stdout
+  admin_access_log: /dev/stdout
+  admin_gui_access_log: /dev/stdout
+  portal_api_access_log: /dev/stdout
+  admin_gui_error_log: /dev/stderr
+  portal_api_error_log: /dev/stderr
+  cluster_cert: /etc/secrets/kong-cluster-cert/tls.crt
+  cluster_cert_key: /etc/secrets/kong-cluster-cert/tls.key
+  lua_ssl_trusted_certificate: /etc/secrets/kong-cluster-cert/tls.crt
+  cluster_control_plane: controlplane-kong-cluster.kong.svc.cluster.local:8005
+  cluster_telemetry_endpoint: controlplane-kong-clustertelemetry.kong.svc.cluster.local:8006
+plugins: {}
+
+secretVolumes: 
+- kong-cluster-cert
+
+status:
+  enabled: true
+  http:
+    enabled: true
+    containerPort: 8100
+    parameters: []
+  tls:
+    enabled: false
+
+proxy:
+  enabled: true
+  type: LoadBalancer   
+# loadBalancerIP: 192.168.1.31
+  labels:
+    enable-metrics: "true"
+  http:
+    enabled: true
+    servicePort: 80
+    containerPort: 8000
+    parameters: []
+  tls:
+    enabled: true
+    servicePort: 443
+    containerPort: 8443
+    parameters:
+    - http2
+  ingress:
+    enabled: false
+    annotations: {}
+    path: /
+  annotations: {}
+  stream: {}
+
+admin:
+  enabled: false
+manager:
+  enabled: false
+portal:
+  enabled: false
+portalapi:
+  enabled: false
+clustertelemetry:
+  enabled: false
+cluster:
+  enabled: false
+  type: ClusterIP
+  tls:
+    enabled: true
+    servicePort: 8005
+    containerPort: 8005
+    parameters: []
+  annotations: {}
+  labels: {}
+
+resources: {}
+updateStrategy: {}
+readinessProbe:
+  httpGet:
+    path: "/status"
+    port: status
+    scheme: HTTP
+  initialDelaySeconds: 5
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+ingressController:
+  enabled: false
+  installCRDs: false
+livenessProbe:
+  httpGet:
+    path: "/status"
+    port: status
+    scheme: HTTP
+  initialDelaySeconds: 5
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "/bin/sleep 15 && kong quit"]
+
+terminationGracePeriodSeconds: 30
+tolerations: []
+nodeSelector: {}
+podAnnotations: {}
+podLabels: {}
+replicaCount: 2
+deploymentAnnotations:
+  kuma.io/gateway: enabled
+  traffic.sidecar.istio.io/includeInboundPorts: ""
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage:
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+enterprise:
+  enabled: true
+  license_secret: kong-enterprise-license
+  vitals:
+    enabled: false
+  portal:
+    enabled: false
+  rbac:
+    enabled: true
+    admin_gui_auth: basic-auth
+    session_conf_secret: kong-session-config
+  smtp:
+    enabled: false
+
+extraSecrets: []
+securityContext: {}
+extraConfigMaps: []
+priorityClassName: ""
+serviceMonitor:
+  enabled: true
+  interval: 10s
+  namespace: prometheus
+  labels:
+    app: kong-sm-for-prometheus
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: "50%"
+podSecurityPolicy:
+  enabled: false
+  spec:
+    privileged: false
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    runAsGroup:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - 'configMap'
+      - 'secret'
+      - 'emptyDir'
+    allowPrivilegeEscalation: false
+    hostNetwork: false
+    hostIPC: false
+    hostPID: false
+    readOnlyRootFilesystem: true
+
