@@ -1,7 +1,0 @@
-config:
-  KongOnEKS:dbPassword: password
-  airflow:dbPassword:
-    secure: AAABADsEK3AIjnZPtL+swrWBOFL2jdgXPJKC6onziOKaJ6sD
-  aws:region: us-east-1
-  kong:dbPassword:
-    secure: AAABAJ2BQ8rsBBauJ42Xn0TRGEDpdml9zy+z+Mdsx4EaEcX34SXFSA==
