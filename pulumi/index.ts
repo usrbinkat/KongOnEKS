@@ -259,7 +259,7 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
 },{
   parent: namespace,
   providers: {kubernetes: provider},
-  customTimeouts: {create: "5m"}
+  customTimeouts: {create: "10m"}
 });
 /*
     manager: {
@@ -387,6 +387,7 @@ const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
   repo: "kong",
   chart: "kong",
   namespace: "kong",
+  skipCRDRendering: true,
   fetchOpts:{
     repo: "https://charts.konghq.com/",
   },
@@ -412,7 +413,7 @@ const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
 },{
   parent: kongGatewayCP,
   providers: {kubernetes: provider},
-  customTimeouts: {create: "5m"}
+  customTimeouts: {create: "10m"}
 });
 
 
