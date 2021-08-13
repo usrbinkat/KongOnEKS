@@ -34,15 +34,13 @@ jobs:
     - name: Pulumi Up
       working-directory: pulumi
       run: |
-        pulumi stack select usrbinkat/Gateway/KongHybridGatewayOnEKS
-        pulumi config set aws:region us-east-1
-        pulumi config set eksCluster:clusterName KongOnEKS
-        pulumi config set --secret kong:dbPassword ${{ secrets.KONG_POSTGRES_PASSWD }}
-        pulumi up --yes --non-interactive --suppress-outputs
-
-    - name: Pull .kube/config for subsequent tasks
-      working-directory: pulumi
-      run: "pulumi stack --stack KongOnEKS output kubeconfig > /root/.kube/config"
+        set -ex;
+        pulumi stack select usrbinkat/Gateway/KongHybridGatewayOnEKS;
+        pulumi config set aws:region us-east-1;
+        pulumi config set eksCluster:clusterName KongOnEKS;
+        pulumi config set --secret kong:dbPassword ${{ secrets.KONG_POSTGRES_PASSWD }};
+        pulumi up --yes --non-interactive --suppress-outputs;
+        aws s3 cp s3://$(pulumi stack output adminBucketName)/kubeconfig /root/.kube/config;
 
     - name: Test Kubeconfig | get nodes
       run: "KUBECONFIG=/root/.kube/config kubectl get nodes"
