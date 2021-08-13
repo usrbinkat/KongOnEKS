@@ -39,11 +39,11 @@ kubectl create secret generic kong-session-config -n kong --from-file=admin_gui_
 
 ## Github Actions Secrets Dependencies
 
-  1 AWS_ACCESS_KEY_ID
-  2 AWS_REGION
-  3 AWS_SECRET_ACCESS_KEY
-  4 GHCR_TOKEN
-  5 GHCR_USER
-  6 GH_ACTIONS_TOKEN
-  7 KONG_POSTGRES_PASSWD
-  8 PULUMI_ACCESS_TOKEN
+  - AWS_ACCESS_KEY_ID    
+  - AWS_REGION
+  - AWS_SECRET_ACCESS_KEY
+  - GHCR_TOKEN
+  - GHCR_USER
+  - GH_ACTIONS_TOKEN
+  - KONG_POSTGRES_PASSWD
+  - PULUMI_ACCESS_TOKEN
