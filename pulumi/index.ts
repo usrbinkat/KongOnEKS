@@ -104,6 +104,7 @@ const db = new aws.rds.Instance("postgresdb", {
 },{customTimeouts: {create: "30m"}});
 export const rdsIp = db.address;
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // EKS cluster
 const cluster = new eks.Cluster(`${clusterName}-cluster`, {
@@ -142,52 +143,8 @@ const keksAdminBucketObject = cluster.kubeconfig.apply(
 }))
 export const adminBucketName = keksAdminBucket.id;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Kong Enterprise Dataplane from kong/kong helm chart
-
 // create namespace 'kong'
 const namespace = new k8s.core.v1.Namespace("ns", {metadata: {name: "kong",}},{provider: provider});
-
-// TODO: automate controlplane / dataplane pki trust secret
-// TODO: resolve Duplicate Resource URN
-/*
-  REF: https://www.pulumi.com/docs/intro/concepts/resources/#urns
-  Error:
-    Diagnostics:
-      kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition (kongplugins.configuration.konghq.com):
-        error: Duplicate resource URN 'urn:pulumi:KongHybridGatewayOnEKS::Gateway::kubernetes:helm.sh/v3:Chart$kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition::kongplugins.configuration.konghq.com'; try giving it a unique name
-*/
-const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
-  repo: "kong",
-  chart: "kong",
-  namespace: "kong",
-  fetchOpts:{
-    repo: "https://charts.konghq.com/",
-  },
-  values: {
-    env: {
-      database: "off",
-      role: "data_plane",
-      prefix: "/kong_prefix/",
-      couster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
-      couster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key",
-      lua_ssl_trusted_certificate: "/etc/secrets/kong-cluster-cert/tls.crt",
-      cluster_control_plane: "controlplane-kong-cluster.kong.svc.cluster.local:8005"
-    },
-    proxy: {enabled: true},
-    admin: {enabled: false},
-    portal: {enabled: false},
-    cluster: {enabled: false},
-    manager: {enabled: false},
-    portalapi: {enabled: false},
-    secretVolumes: ["kong-cluster-cert"],
-    ingressController: {enabled: false, installCRDs: false}
-  },
-},{
-  providers: {kubernetes: provider},
-  customTimeouts: {create: "30m"}
-});
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -258,7 +215,7 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
       args: ["--v=5"],
       installCRDs: false,
       env: {
-        publish_service: "kong/controlplane-kong-proxy",
+        publish_service: "kong/controlplane-kong-cluster",
         kong_admin_tls_skip_verify: true,
         kong_admin_token: {
           valueFrom: {
@@ -300,6 +257,7 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
     }
   },
 },{
+  parent: namespace,
   providers: {kubernetes: provider},
   customTimeouts: {create: "5m"}
 });
@@ -411,6 +369,51 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
       labels: "{}"
     },
     */
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Kong Enterprise Dataplane from kong/kong helm chart
+
+// TODO: automate controlplane / dataplane pki trust secret
+// TODO: resolve Duplicate Resource URN
+/*
+  REF: https://www.pulumi.com/docs/intro/concepts/resources/#urns
+  Error:
+    Diagnostics:
+      kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition (kongplugins.configuration.konghq.com):
+        error: Duplicate resource URN 'urn:pulumi:KongHybridGatewayOnEKS::Gateway::kubernetes:helm.sh/v3:Chart$kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition::kongplugins.configuration.konghq.com'; try giving it a unique name
+*/
+const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
+  repo: "kong",
+  chart: "kong",
+  namespace: "kong",
+  fetchOpts:{
+    repo: "https://charts.konghq.com/",
+  },
+  values: {
+    env: {
+      database: "off",
+      role: "data_plane",
+      prefix: "/kong_prefix/",
+      cluster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
+      cluster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key",
+      lua_ssl_trusted_certificate: "/etc/secrets/kong-cluster-cert/tls.crt",
+      cluster_control_plane: "controlplane-kong-cluster.kong.svc.cluster.local:8005"
+    },
+    proxy: {enabled: true},
+    admin: {enabled: false},
+    portal: {enabled: false},
+    cluster: {enabled: false},
+    manager: {enabled: false},
+    portalapi: {enabled: false},
+    secretVolumes: ["kong-cluster-cert"],
+    ingressController: {enabled: false, installCRDs: false}
+  },
+},{
+  parent: kongGatewayCP,
+  providers: {kubernetes: provider},
+  customTimeouts: {create: "5m"}
+});
 
 
 ////////////////////////////////////////////////////////////////////////////////
