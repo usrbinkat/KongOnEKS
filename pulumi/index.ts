@@ -143,10 +143,54 @@ export const adminBucketName = keksAdminBucket.id;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Kong HELM Chart Deploy
+// Kong Enterprise Dataplane from kong/kong helm chart
 
 // create namespace 'kong'
 const namespace = new k8s.core.v1.Namespace("ns", {metadata: {name: "kong",}},{provider: provider});
+
+// TODO: automate controlplane / dataplane pki trust secret
+// TODO: resolve Duplicate Resource URN
+/*
+  REF: https://www.pulumi.com/docs/intro/concepts/resources/#urns
+  Error:
+    Diagnostics:
+      kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition (kongplugins.configuration.konghq.com):
+        error: Duplicate resource URN 'urn:pulumi:KongHybridGatewayOnEKS::Gateway::kubernetes:helm.sh/v3:Chart$kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition::kongplugins.configuration.konghq.com'; try giving it a unique name
+*/
+const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
+  repo: "kong",
+  chart: "kong",
+  namespace: "kong",
+  fetchOpts:{
+    repo: "https://charts.konghq.com/",
+  },
+  values: {
+    env: {
+      database: "off",
+      role: "data_plane",
+      prefix: "/kong_prefix/",
+      couster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
+      couster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key",
+      lua_ssl_trusted_certificate: "/etc/secrets/kong-cluster-cert/tls.crt",
+      cluster_control_plane: "controlplane-kong-cluster.kong.svc.cluster.local:8005"
+    },
+    proxy: {enabled: true},
+    admin: {enabled: false},
+    portal: {enabled: false},
+    cluster: {enabled: false},
+    manager: {enabled: false},
+    portalapi: {enabled: false},
+    secretVolumes: ["kong-cluster-cert"],
+    ingressController: {enabled: false, installCRDs: false}
+  },
+},{
+  providers: {kubernetes: provider},
+  customTimeouts: {create: "30m"}
+});
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Kong Enterprise Controlplane from kong/kong helm chart
 
 // Deploy Kong Enterprise Controlplane from kong/kong helm chart.
 // TODO:
@@ -367,90 +411,52 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
     },
     */
 
-// Deploy Kong Enterprise Controlplane from kong/kong helm chart.
-// TODO: automate controlplane / dataplane pki trust secret
-// TODO: resolve Duplicate Resource URN
-/*
-  REF: https://www.pulumi.com/docs/intro/concepts/resources/#urns
-  Error:
-    Diagnostics:
-      kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition (kongplugins.configuration.konghq.com):
-        error: Duplicate resource URN 'urn:pulumi:KongHybridGatewayOnEKS::Gateway::kubernetes:helm.sh/v3:Chart$kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition::kongplugins.configuration.konghq.com'; try giving it a unique name
-*/
-const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
-  repo: "kong",
-  chart: "kong",
-  namespace: "kong",
-  fetchOpts:{
-    repo: "https://charts.konghq.com/",
-  },
-  values: {
-    env: {
-      database: "off",
-      role: "data_plane",
-      prefix: "/kong_prefix/",
-      couster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
-      couster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key",
-      lua_ssl_trusted_certificate: "/etc/secrets/kong-cluster-cert/tls.crt",
-      cluster_control_plane: "controlplane-kong-cluster.kong.svc.cluster.local:8005"
-    },
-    proxy: {enabled: true},
-    admin: {enabled: false},
-    portal: {enabled: false},
-    cluster: {enabled: false},
-    manager: {enabled: false},
-    portalapi: {enabled: false},
-    secretVolumes: ["kong-cluster-cert"],
-    ingressController: {enabled: false, installCRDs: false}
-  },
-},{
-  providers: {kubernetes: provider},
-  customTimeouts: {create: "30m"}
-});
-
 
 ////////////////////////////////////////////////////////////////////////////////
-// Export Values
-// TODO:
-// - deprecate kubeconfig reliance
-// - leverage oidc / rbac natively on AWS for api auth
-
 ////////////////////////////////////////////////////////////////////////////////
 /*
+
+////////////////////////////////////////////////////////////////////////////////
 Notes:
   Download kubeconfig from s3 via command:
     ~$ aws s3 cp s3://$(pulumi stack --stack KongOnEKS output adminBucketName)/kubeconfig ~/.kube/config
 
+
+////////////////////////////////////////////////////////////////////////////////
 REFERENCES:
   - https://github.com/Kong/aws-marketplace/blob/master/K4K8S/Kong%20for%20Kubernetes%20Enterprise.md
   - https://www.pulumi.com/docs/intro/concepts/secrets/#using-configuration-and-secrets-in-code
 
-TODO:
-  Convert Secrets Management to AWS kms
+
+////////////////////////////////////////////////////////////////////////////////
+  TODO: deprecate kubeconfig reliance
+  TODO: leverage oidc / rbac natively on AWS for api auth
+
+  TODO: Convert Secrets Management to AWS kms
     - https://www.pulumi.com/docs/reference/cli/pulumi_stack_init/#pulumi-stack-init
     - https://www.pulumi.com/docs/intro/concepts/secrets/#aws-key-management-service-kms
 
-  Create pulumi func for kong-enterprise-license
+  TODO: Create pulumi func for kong-enterprise-license
     - (workaround) ~$ kubectl create secret generic kong-enterprise-license -n kong --from-file=/tmp/license
 
-  Create Pulumi func for super admin password
+  TODO: Create Pulumi func for super admin password
     - (workaround) ~$ kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password=password
 
-  Create modular structure for IaC
+  TODO: Create modular structure for IaC
     - https://github.com/pulumi/examples/tree/master/classic-azure-ts-cosmosapp-component
 
-  Create Pulumi func for kong manager & dev portal web gui session configuration
+  TODO: Create Pulumi func for kong manager & dev portal web gui session configuration
     - (workaround) ~$ 
 cat <<EOF | tee /tmp/admin_gui_session_conf
 {"cookie_name":"admin_session","cookie_samesite":"off","secret":"password","cookie_secure":false,"storage":"kong"}
 EOF
-      - (workaround) ~$
+    - (workaround) ~$
 cat <<EOF | tee /tmp/portal_session_conf
 {"cookie_name":"portal_session","cookie_samesite":"off","secret":"password","cookie_secure":false,"storage":"kong"}
 EOF
-      - (workaround) ~$ kubectl create secret generic kong-session-config -n kong --from-file=/tmp/admin_gui_session_conf --from-file=/tmp/portal_session_conf
+    - (workaround) ~$ kubectl create secret generic kong-session-config -n kong --from-file=/tmp/admin_gui_session_conf --from-file=/tmp/portal_session_conf
 
-// Create Kong License Kubernetes Secret
+  TODO: Create Kong License Kubernetes Secret
 const secretDatabaseConnection = new k8s.core.v1.Secret("kong-database-connect-string", {
     stringData: {
       kongDbPassword: dbPassword, // or could be process.env.DB_SECRET probably or some variation

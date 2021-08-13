@@ -1,9 +1,10 @@
 # KongOnEKS | Status: *rough draft*
+
 Pulumi IaC for EKS
 
-## Current Steps:
+## Clone & Run IaC
+
 ```sh
-# Clone Repo
 git clone https://github.com/usrbinkat/KongOnEKS ~/KongOnEKS && cd ~/KongOnEKS
 
 # Run IaC Runner Container (local)
@@ -20,7 +21,8 @@ pulumi config set eksCluster:clusterName KongOnEKS
 pulumi up
 ```
 
-# Workarounds to be resolved later
+## Workarounds to be resolved later
+
 ```sh
 kubectl create secret generic kong-enterprise-license -n kong --from-file=license=${HOME}/.kong-license-data/license.json
 podman run -it --rm --pull always --user root -v /tmp/kong:/tmp/kong:z docker.io/kong/kong -- kong hybrid gen_cert /tmp/kong/tls.crt /tmp/kong/tls.key
