@@ -49,6 +49,7 @@ export const vpcId = vpc.id;
 // REF: https://www.pulumi.com/docs/reference/pkg/aws/rds/instance/
 // REF: https://www.pulumi.com/docs/guides/crosswalk/aws/vpc/#configuring-subnets-for-a-vpc
 // REF: https://github.com/pulumi/pulumi-aws/blob/0b73446ce5361fcd9f313d7e5ac36e5668936d31/sdk/nodejs/rds/cluster.ts#L75
+// REF: https://www.lastweekinaws.com/blog/aurora-vs-rds-an-engineers-guide-to-choosing-a-database/
 
 // RDS Security Group
 const rdsSecurityGroup = new aws.ec2.SecurityGroup("dbsecgrp", {
