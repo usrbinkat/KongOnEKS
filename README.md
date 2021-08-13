@@ -29,3 +29,9 @@ podman run -it --rm --pull always --user root -v /tmp/kong:/tmp/kong:z docker.io
 kubectl create secret tls kong-cluster-cert --namespace kong --cert=/tmp/kong/tls.crt --key=/tmp/kong/tls.key
 kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password='password'
 ```
+
+## Download KUBECONFIG
+
+```sh
+aws s3 cp s3://$(pulumi stack output adminBucketName)/kubeconfig ~/.kube/config
+```
