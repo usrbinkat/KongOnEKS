@@ -21,6 +21,12 @@ pulumi config set eksCluster:clusterName KongOnEKS
 pulumi up
 ```
 
+## Download KUBECONFIG
+
+```sh
+aws s3 cp s3://$(pulumi stack output adminBucketName)/kubeconfig ~/.kube/config
+```
+
 ## Workarounds to be resolved later
 
 ```sh
@@ -28,10 +34,16 @@ kubectl create secret generic kong-enterprise-license -n kong --from-file=licens
 podman run -it --rm --pull always --user root -v /tmp/kong:/tmp/kong:z docker.io/kong/kong -- kong hybrid gen_cert /tmp/kong/tls.crt /tmp/kong/tls.key
 kubectl create secret tls kong-cluster-cert --namespace kong --cert=/tmp/kong/tls.crt --key=/tmp/kong/tls.key
 kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password='password'
+kubectl create secret generic kong-session-config -n kong --from-file=admin_gui_session_conf=/tmp/admin_gui_session_conf --from-file=portal_session_conf=/tmp/portal_session_conf
 ```
 
-## Download KUBECONFIG
+## Github Actions Secrets Dependencies
 
-```sh
-aws s3 cp s3://$(pulumi stack output adminBucketName)/kubeconfig ~/.kube/config
-```
+  1 AWS_ACCESS_KEY_ID
+  2 AWS_REGION
+  3 AWS_SECRET_ACCESS_KEY
+  4 GHCR_TOKEN
+  5 GHCR_USER
+  6 GH_ACTIONS_TOKEN
+  7 KONG_POSTGRES_PASSWD
+  8 PULUMI_ACCESS_TOKEN
