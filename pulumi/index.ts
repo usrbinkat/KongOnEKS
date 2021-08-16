@@ -234,13 +234,6 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
       ingressClass: "kong",
       rbac: {create: true},
       serviceAccount: {create: true}
-      /*
-      // TODO: assign resource requests and limits
-      resources: {
-        limits: {cpu: "100m",memory: "256mi",},
-        requests: {cpu: "50m",memory: "128mi",}
-      }
-      */
     },
     enterprise: {
       enabled: true,
@@ -254,14 +247,39 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
       vitals: {enabled: true},
       portal: {enabled: true},
       smtp: {enabled: true}
+    },
+    manager: {
+      enabled: true,
+      type: "ClusterIP",
+      http: {
+        enabled: true,
+        servicePort: 8002,
+        containerPort: 8002,
+        parameters: []
+      },
+      tls: {
+        enabled: true,
+        servicePort: "8445",
+        containerPort: "8445",
+        parameters: ["http2"]
+      },
+      ingress: {
+        enabled: true,
+        annotations: {"kubernetes.io/ingress.class": "kong"},
+        hostname: "manager.kong.kongoneks.lab",
+        tls: "manager.kong.kongoneks.lab",
+        path: "/"
+      },
+      annotations: {"konghq.com/protocol": "https"}
     }
   },
 },{
   parent: namespace,
-  providers: {kubernetes: provider},
-  customTimeouts: {create: "10m"}
+  providers: {kubernetes: provider}
+  //customTimeouts: {create: "10m"}
 });
 /*
+    },
     manager: {
       enabled: true,
       type: "ClusterIP",
@@ -284,7 +302,7 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
         hostname: "manager.kong.kongoneks.lab",
         path: "/"
       },
-      labels: "{}"
+      labels: ""
     },
     portal: {
       enabled: true,
