@@ -1,4 +1,4 @@
-# KongOnEKS | Status: *rough draft*
+# KongOnEKS | Status: *non production rough draft*
 
 Pulumi IaC for EKS
 
