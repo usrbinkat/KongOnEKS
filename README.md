@@ -36,7 +36,7 @@ sudo chown -R $USER /tmp/kong
 kubectl create secret generic kong-enterprise-license -n kong --from-file=license=${HOME}/.kong-license-data/license.json
 kubectl create secret tls kong-cluster-cert --namespace kong --cert=/tmp/kong/tls.crt --key=/tmp/kong/tls.key
 kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password='password'
-kubectl create secret generic kong-session-config -n kong --from-file=admin_gui_session_conf=/tmp/admin_gui_session_conf --from-file=portal_session_conf=/tmp/portal_session_conf
+kubectl create secret generic kong-session-config -n kong --from-file=admin_gui_session_conf=./hack/contrib/admin_gui_session_conf --from-file=portal_session_conf=./hack/contrib/portal_session_conf
 ```
 
 ## Github Actions Secrets Dependencies

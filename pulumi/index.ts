@@ -250,7 +250,7 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
     },
     manager: {
       enabled: true,
-      type: "ClusterIP",
+      type: "LoadBalancer",
       http: {
         enabled: true,
         servicePort: 8002,
@@ -279,6 +279,22 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
   //customTimeouts: {create: "10m"}
 });
 /*
+
+proxy:
+  enabled: true
+  type: LoadBalancer
+  annotations: {
+    "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "https",
+    "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled": "true",
+    "service.beta.kubernetes.io/aws-load-balancer-ssl-cert": "arn:aws:acm:us-west-2:XXXXXXXX:certificate/XXXXXX-XXXXXXX-XXXXXXX-XXXXXXXX",
+    "service.beta.kubernetes.io/aws-load-balancer-ssl-ports": "kong-proxy-tls",
+    "service.beta.kubernetes.io/aws-load-balancer-type": "elb"
+  }
+  
+  kong-proxy-tls
+  overrideServiceTargetPort
+  service.beta.kubernetes.io/aws-load-balancer-ssl-ports
+
     },
     manager: {
       enabled: true,
