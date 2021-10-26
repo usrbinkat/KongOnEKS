@@ -1,6 +1,6 @@
 # KongOnEKS | Status: *non production rough draft*
 
-Pulumi IaC for EKS
+Developmental Pulumi IaC for EKS
 
 ## Clone & Run IaC
 
