@@ -165,7 +165,6 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
     secretVolumes: ["kong-cluster-cert","kong-tls"],
     deployment: {kong: {enabled: true, daemonset: false}},
     deploymentAnnotations: {"kuma.io/gateway": "enabled"},
-    proxy: {enabled: false},
     env: {
       prefix: "/kong_prefix/",
       database: "postgres",
@@ -290,17 +289,49 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
         enabled: true,
         servicePort: "8445",
         containerPort: "8445",
-        parameters: ["http2"]
+        parameters: ["http2"],
       },
       ingress: {
         enabled: true,
         annotations: {"kubernetes.io/ingress.class": "kong"},
         hostname: "manager.kong.hbfs.io",
         tls: "manager.kong.hbfs.io",
-        path: "/"
+        path: "/",
       },
-      annotations: {"konghq.com/protocol": "https"}
-    }
+      annotations: {"konghq.com/protocol": "https"},
+    },
+    proxy: {
+      enabled: "true",
+      type: "LoadBalancer",
+      annotations: {
+        "prometheus.io/port": "9542",
+        "prometheus.io/scrape": "true",
+        "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol": "*",
+        "service.beta.kubernetes.io/aws-load-balancer-name": "dataplane",
+        "service.beta.kubernetes.io/aws-load-balancer-subnets": "subnet-0a4c44c677c2ea74c,subnet-07579767f7d37f425",
+        "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+        "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp",
+        "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+        "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type": "ip",
+        "alb.ingress.kubernetes.io/load-balancer-name": "controlplane-api",
+      },
+      http: {
+        enabled: "false",
+        servicePort: "80",
+        containerPort: "8080",
+      },
+      tls: {
+        enabled: "true",
+        servicePort: "443",
+        containerPort: "8443",
+      },
+      ingress: {
+        enabled: "false",
+      },
+      labels: {
+        "enable-metrics": "true",
+      },
+    },
   },
 },{
   parent: namespace,
