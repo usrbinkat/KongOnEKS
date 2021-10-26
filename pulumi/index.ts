@@ -160,19 +160,18 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
   namespace: "kong",
   fetchOpts: {repo: "https://charts.konghq.com/"},
   values: {
-//  plugins: "{}",
+    plugins: "bundled,openid-connect",
     replicaCount: "2",
-    secretVolumes: ["kong-cluster-cert"],
+    secretVolumes: ["kong-cluster-cert","kong-tls"],
     deployment: {kong: {enabled: true, daemonset: false}},
     deploymentAnnotations: {"kuma.io/gateway": "enabled"},
     proxy: {enabled: false},
     env: {
-      role: "control_plane",
       prefix: "/kong_prefix/",
       database: "postgres",
+      // TODO: variablize log_level
       log_level: "debug",
       smtp_mock: "on",
-      portal: "on",
       vitals: "on",
       anonymous_reports: "off",
       nginx_worker_processes: "2",
@@ -186,9 +185,39 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
       password: "password",
       cluster_cert: "/etc/secrets/kong-cluster-cert/tls.crt",
       cluster_cert_key: "/etc/secrets/kong-cluster-cert/tls.key",
+      audit_log: "on",
+      // kong admin api and manager tuneables
+      admin_gui_protocol: "https",
+      admin_api_uri: "https://kong.hbfs.io",
+      admin_gui_url: "https://manager.kong.hbfs.io",
+      admin_ssl_cert: "/etc/secrets/kong-tls/tls.crt",
+      admin_ssl_cert_key: "/etc/secrets/kong-tls/tls.key",
+      admin_gui_ssl_cert: "/etc/secrets/kong-tls/tls.crt",
+      admin_gui_ssl_cert_key: "/etc/secrets/kong-tls/tls.key",
+      admin_gui_access_log: "/dev/stdout",
+      admin_gui_error_log: "/dev/stdout",
+      admin_access_log: "/dev/stdout",
+      admin_error_log: "/dev/stdout",
+      // kong portal web interface and portal api tuneables
+      portal: "on",
       portal_cors_origins: "*",
+      portal_gui_protocol: "https",
+      portal_gui_url: "https://portal.kong.hbfs.io/",
+      portal_api_uri: "https://portal.kong.hbfs.io/api",
+      portal_gui_host: "portal.kong.hbfs.io",
+      portal_gui_access_log: "/dev/stdout",
+      portal_api_access_log: "/dev/stdout",
+      portal_gui_error_log: "/dev/stdout",
+      portal_api_error_log: "/dev/stdout",
       portal_auth: "basic-auth",
-      audit_log: "on"
+      portal_session_conf: {
+        valueFrom: {
+          secretKeyRef: {
+            name: "kong-session-config",
+            key: "portal_session_conf"
+          }
+        }
+      }
     },
     cluster: {
       enabled: true,
@@ -266,8 +295,8 @@ const kongGatewayCP = new k8s.helm.v3.Chart("controlplane", {
       ingress: {
         enabled: true,
         annotations: {"kubernetes.io/ingress.class": "kong"},
-        hostname: "manager.kong.kongoneks.lab",
-        tls: "manager.kong.kongoneks.lab",
+        hostname: "manager.kong.hbfs.io",
+        tls: "manager.kong.hbfs.io",
         path: "/"
       },
       annotations: {"konghq.com/protocol": "https"}
@@ -314,8 +343,8 @@ proxy:
         annotations: {
           "kubernetes.io/ingress.class": "kong"
         },
-        tls: "manager.kong.kongoneks.lab",
-        hostname: "manager.kong.kongoneks.lab",
+        tls: "manager.kong.hbfs.io",
+        hostname: "manager.kong.hbfs.io",
         path: "/"
       },
       labels: ""
@@ -343,8 +372,8 @@ proxy:
         annotations: {
           "kubernetes.io/ingress.class": "kong"
         },
-        tls: "portal.kong.kongoneks.lab",
-        hostname: "portal.kong.kongoneks.lab",
+        tls: "portal.kong.hbfs.io",
+        hostname: "portal.kong.hbfs.io",
         path: "/"
       },
       labels: "{}"
@@ -372,8 +401,8 @@ proxy:
         annotations: {
           "kubernetes.io/ingress.class": "kong"
         },
-        tls: "papi.kong.kongoneks.lab",
-        hostname: "papi.kong.kongoneks.lab",
+        tls: "papi.kong.hbfs.io",
+        hostname: "papi.kong.hbfs.io",
         path: "/"
       },
       labels: "{}"
@@ -396,8 +425,8 @@ proxy:
         annotations: {
           "kubernetes.io/ingress.class": "kong"
         },
-        tls: "manager.kong.kongoneks.lab",
-        hostname: "manager.kong.kongoneks.lab",
+        tls: "manager.kong.hbfs.io",
+        hostname: "manager.kong.hbfs.io",
         path: "/"
       },
       labels: "{}"
@@ -416,7 +445,6 @@ proxy:
     Diagnostics:
       kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition (kongplugins.configuration.konghq.com):
         error: Duplicate resource URN 'urn:pulumi:KongHybridGatewayOnEKS::Gateway::kubernetes:helm.sh/v3:Chart$kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition::kongplugins.configuration.konghq.com'; try giving it a unique name
-*/
 const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
   repo: "kong",
   chart: "kong",
@@ -449,6 +477,7 @@ const kongGatewayDP = new k8s.helm.v3.Chart("dataplane", {
   providers: {kubernetes: provider},
   customTimeouts: {create: "10m"}
 });
+*/
 
 
 ////////////////////////////////////////////////////////////////////////////////

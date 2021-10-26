@@ -1,0 +1,5 @@
+config:
+  aws:region: us-east-1
+  eksCluster:clusterName: KongOnEKS
+  kong:dbPassword:
+    secure: AAABABuMqXw+dnE0kEFYKapCAubcPgZU86gSMzBTCFhtaWovJCKHBw==
