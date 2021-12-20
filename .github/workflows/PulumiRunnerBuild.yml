@@ -9,7 +9,7 @@ jobs:
     steps:
 
     - name: Login ghcr.io
-      uses: docker/login-action@v1.10.0
+      uses: docker/login-action@v1.12.0
       with:
         logout: true
         registry: ghcr.io
