@@ -38,7 +38,7 @@ jobs:
  
     - name: Trigger Pulumi Deploy
       if: success()
-      uses: peter-evans/repository-dispatch@v2.0.0
+      uses: peter-evans/repository-dispatch@v2.0.1
       with:
         event-type: pulumi-runner-deploy
         token: ${{ secrets.GH_ACTIONS_TOKEN }}
